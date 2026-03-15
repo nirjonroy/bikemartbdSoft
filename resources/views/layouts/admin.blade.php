@@ -91,6 +91,12 @@
                             <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
                         </li>
                         <li class="nav-item d-none d-md-block">
+                            <a href="{{ route('purchases.index') }}" class="nav-link">Purchases</a>
+                        </li>
+                        <li class="nav-item d-none d-md-block">
+                            <a href="{{ route('sells.index') }}" class="nav-link">Sales</a>
+                        </li>
+                        <li class="nav-item d-none d-md-block">
                             <a href="{{ route('business-settings.edit') }}" class="nav-link">Business Info</a>
                         </li>
                     </ul>
@@ -163,6 +169,18 @@
                                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                                     <i class="nav-icon bi bi-speedometer2"></i>
                                     <p>Dashboard</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('purchases.index') }}" class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-bag-check"></i>
+                                    <p>Purchases</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('sells.index') }}" class="nav-link {{ request()->routeIs('sells.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-cash-stack"></i>
+                                    <p>Sales</p>
                                 </a>
                             </li>
                             <li class="nav-item">
