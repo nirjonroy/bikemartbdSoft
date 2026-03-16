@@ -91,6 +91,9 @@
                             <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
                         </li>
                         <li class="nav-item d-none d-md-block">
+                            <a href="{{ route('vehicles.index') }}" class="nav-link">Vehicles</a>
+                        </li>
+                        <li class="nav-item d-none d-md-block">
                             <a href="{{ route('purchases.index') }}" class="nav-link">Purchases</a>
                         </li>
                         <li class="nav-item d-none d-md-block">
@@ -164,6 +167,25 @@
                             aria-label="Main navigation"
                             data-accordion="false"
                         >
+                            <li class="nav-item">
+                                <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-bookmark-star"></i>
+                                    <p>Brands</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('categories.index') }}" class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-diagram-3"></i>
+                                    <p>Categories</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('vehicles.index') }}" class="nav-link {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
+                                    <i class="nav-icon bi bi-bicycle"></i>
+                                    <p>Vehicles</p>
+                                </a>
+                            </li>
+
                             <li class="nav-header">OPERATIONS</li>
                             <li class="nav-item">
                                 <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">

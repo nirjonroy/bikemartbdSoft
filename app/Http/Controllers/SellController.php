@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessSetting;
 use App\Models\Sell;
 use App\Models\SellDocument;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +14,7 @@ class SellController extends Controller
     public function index()
     {
         $sells = Sell::query()
+            ->with(['vehicle.brand', 'vehicle.category'])
             ->withCount(['pictureDocuments as pictures_count'])
             ->latest('selling_date')
             ->paginate(12);
@@ -46,7 +47,7 @@ class SellController extends Controller
 
     public function show(Sell $sell)
     {
-        $sell->load('documents');
+        $sell->load(['vehicle.brand', 'vehicle.category', 'documents']);
 
         return view('sells.show', $this->formViewData([
             'sell' => $sell,
@@ -55,7 +56,7 @@ class SellController extends Controller
 
     public function edit(Sell $sell)
     {
-        $sell->load('documents');
+        $sell->load(['vehicle.brand', 'vehicle.category', 'documents']);
 
         return view('sells.edit', $this->formViewData([
             'sell' => $sell,
@@ -92,22 +93,14 @@ class SellController extends Controller
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'documentTypes' => SellDocument::FILE_TYPES,
+            'vehicles' => Vehicle::query()->with(['brand', 'category'])->orderBy('name')->get(),
         ], $overrides);
-    }
-
-    private function getBusinessSetting(): BusinessSetting
-    {
-        return BusinessSetting::first() ?? BusinessSetting::create([
-            'business_name' => config('app.name', 'BikeMart POS'),
-            'email' => 'admin@bikemartbd.com',
-            'currency_code' => 'BDT',
-            'timezone' => config('app.timezone', 'UTC'),
-        ]);
     }
 
     private function validatedSellData(Request $request): array
     {
         $validator = Validator::make($request->all(), [
+            'vehicle_id' => ['required', 'exists:vehicles,id'],
             'name' => ['required', 'string', 'max:255'],
             'father_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:1000'],

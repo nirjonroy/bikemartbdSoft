@@ -8,6 +8,8 @@
         : [];
 
     $costRows = old('modifying_costs', $existingCosts);
+    $selectedVehicleId = old('vehicle_id', request('vehicle_id', $purchase->vehicle_id));
+    $selectedVehicle = $vehicles->firstWhere('id', (int) $selectedVehicleId);
 
     if (empty($costRows)) {
         $costRows = [['reason' => '', 'cost' => '']];
@@ -19,7 +21,41 @@
         <h3 class="card-title">Owner and Purchase Information</h3>
     </div>
     <div class="card-body">
+        @if ($vehicles->isEmpty())
+            <div class="alert alert-warning">
+                Add at least one vehicle before recording a purchase.
+                <a href="{{ route('vehicles.create') }}" class="alert-link">Create vehicle</a>
+            </div>
+        @endif
+
         <div class="row g-3">
+            <div class="col-md-6">
+                <label for="vehicle_id" class="form-label">Vehicle / Product</label>
+                <select id="vehicle_id" name="vehicle_id" class="form-select @error('vehicle_id') is-invalid @enderror" required>
+                    <option value="">Select a vehicle</option>
+                    @foreach ($vehicles as $vehicleOption)
+                        <option value="{{ $vehicleOption->id }}" @selected((string) $selectedVehicleId === (string) $vehicleOption->id)>
+                            {{ $vehicleOption->display_name }} | {{ $vehicleOption->brand->name }} / {{ $vehicleOption->category->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label">Selected Vehicle Details</label>
+                <div class="border rounded p-3 h-100 bg-light">
+                    @if ($selectedVehicle)
+                        <div class="fw-semibold">{{ $selectedVehicle->brand->name }} / {{ $selectedVehicle->category->name }}</div>
+                        <div class="small text-muted">
+                            Registration: {{ $selectedVehicle->registration_number ?: 'Not added' }} |
+                            Engine: {{ $selectedVehicle->engine_number ?: 'Not added' }}
+                        </div>
+                    @else
+                        <div class="text-muted">Select a vehicle to connect this purchase record.</div>
+                    @endif
+                </div>
+            </div>
+
             <div class="col-md-6">
                 <label for="name" class="form-label">Name</label>
                 <input type="text" id="name" name="name" class="form-control @error('name') is-invalid @enderror" value="{{ old('name', $purchase->name) }}" required>

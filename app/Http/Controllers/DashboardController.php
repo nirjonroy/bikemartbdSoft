@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessSetting;
+use App\Models\Brand;
+use App\Models\Category;
+use App\Models\Purchase;
+use App\Models\Sell;
 use App\Models\User;
+use App\Models\Vehicle;
 
 class DashboardController extends Controller
 {
@@ -33,16 +37,11 @@ class DashboardController extends Controller
             'businessSetting' => $businessSetting,
             'staffCount' => User::count(),
             'profileCompletion' => $profileCompletion,
-        ]);
-    }
-
-    private function getBusinessSetting(): BusinessSetting
-    {
-        return BusinessSetting::first() ?? BusinessSetting::create([
-            'business_name' => config('app.name', 'BikeMart POS'),
-            'email' => 'admin@bikemartbd.com',
-            'currency_code' => 'BDT',
-            'timezone' => config('app.timezone', 'UTC'),
+            'brandCount' => Brand::count(),
+            'categoryCount' => Category::count(),
+            'vehicleCount' => Vehicle::count(),
+            'purchaseCount' => Purchase::count(),
+            'saleCount' => Sell::count(),
         ]);
     }
 }

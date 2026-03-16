@@ -20,8 +20,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Vehicle</th>
                             <th>Name</th>
-                            <th>Mobile</th>
                             <th>Purchase Date</th>
                             <th>Buying Price</th>
                             <th>Modifying Cost</th>
@@ -33,10 +33,15 @@
                         @forelse ($purchases as $purchase)
                             <tr>
                                 <td>
-                                    <div class="fw-semibold">{{ $purchase->name }}</div>
-                                    <div class="small text-muted">{{ $purchase->father_name ?: 'Father name not added' }}</div>
+                                    <div class="fw-semibold">{{ $purchase->vehicle?->display_name ?: 'Not linked' }}</div>
+                                    <div class="small text-muted">
+                                        {{ $purchase->vehicle?->brand?->name ?: 'No brand' }} / {{ $purchase->vehicle?->category?->name ?: 'No category' }}
+                                    </div>
                                 </td>
-                                <td>{{ $purchase->mobile_number ?: 'N/A' }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ $purchase->name }}</div>
+                                    <div class="small text-muted">{{ $purchase->mobile_number ?: 'Mobile not added' }}</div>
+                                </td>
                                 <td>{{ $purchase->purchasing_date?->format('d M Y') }}</td>
                                 <td>{{ number_format((float) $purchase->buying_price_from_owner, 2) }}</td>
                                 <td>{{ number_format((float) ($purchase->modifying_costs_sum ?? 0), 2) }}</td>

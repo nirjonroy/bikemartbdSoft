@@ -22,30 +22,30 @@
         <div class="col-lg-3 col-6">
             <div class="small-box text-bg-success">
                 <div class="inner">
-                    <h3>{{ $profileCompletion }}<sup class="fs-5">%</sup></h3>
-                    <p>Business Profile Complete</p>
+                    <h3>{{ $brandCount }}</h3>
+                    <p>Brands</p>
                 </div>
-                <i class="small-box-icon bi bi-building-check"></i>
+                <i class="small-box-icon bi bi-bookmark-star"></i>
             </div>
         </div>
 
         <div class="col-lg-3 col-6">
             <div class="small-box text-bg-warning">
                 <div class="inner">
-                    <h3>{{ $businessSetting->currency_code ?: 'BDT' }}</h3>
-                    <p>Default Currency</p>
+                    <h3>{{ $categoryCount }}</h3>
+                    <p>Categories</p>
                 </div>
-                <i class="small-box-icon bi bi-cash-coin"></i>
+                <i class="small-box-icon bi bi-diagram-3"></i>
             </div>
         </div>
 
         <div class="col-lg-3 col-6">
             <div class="small-box text-bg-info">
                 <div class="inner">
-                    <h3>{{ $businessSetting->timezone ?: config('app.timezone') }}</h3>
-                    <p>Timezone</p>
+                    <h3>{{ $vehicleCount }}</h3>
+                    <p>Vehicles / Products</p>
                 </div>
-                <i class="small-box-icon bi bi-clock-history"></i>
+                <i class="small-box-icon bi bi-bicycle"></i>
             </div>
         </div>
     </div>
@@ -118,10 +118,54 @@
         <div class="col-lg-4">
             <div class="card card-outline card-success">
                 <div class="card-header">
+                    <h3 class="card-title">Inventory Snapshot</h3>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Purchases</span>
+                        <strong>{{ $purchaseCount }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Sales</span>
+                        <strong>{{ $saleCount }}</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3">
+                        <span>Profile completion</span>
+                        <strong>{{ $profileCompletion }}%</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Currency / Timezone</span>
+                        <strong>{{ $businessSetting->currency_code ?: 'BDT' }} / {{ $businessSetting->timezone ?: config('app.timezone') }}</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-outline card-success">
+                <div class="card-header">
                     <h3 class="card-title">Quick Actions</h3>
                 </div>
                 <div class="card-body">
                     <div class="d-grid gap-2">
+                        <a href="{{ route('vehicles.create') }}" class="btn btn-outline-success">
+                            <i class="bi bi-bicycle me-1"></i>
+                            Add Vehicle
+                        </a>
+                        <a href="{{ route('purchases.create') }}" class="btn btn-outline-primary">
+                            <i class="bi bi-bag-check me-1"></i>
+                            Record Purchase
+                        </a>
+                        <a href="{{ route('sells.create') }}" class="btn btn-outline-success">
+                            <i class="bi bi-cash-stack me-1"></i>
+                            Record Sale
+                        </a>
+                        <a href="{{ route('brands.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-bookmark-star me-1"></i>
+                            Manage Brands
+                        </a>
+                        <a href="{{ route('categories.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-diagram-3 me-1"></i>
+                            Manage Categories
+                        </a>
                         <a href="{{ route('business-settings.edit') }}" class="btn btn-outline-primary">
                             <i class="bi bi-building-gear me-1"></i>
                             Business Information

@@ -11,6 +11,37 @@
 @section('content')
     <div class="row">
         <div class="col-lg-4">
+            <div class="card card-outline card-info">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">Vehicle Information</h3>
+                    @if ($purchase->vehicle)
+                        <a href="{{ route('vehicles.show', $purchase->vehicle) }}" class="btn btn-sm btn-outline-primary">View Vehicle</a>
+                    @endif
+                </div>
+                <div class="card-body">
+                    @if ($purchase->vehicle)
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5">Vehicle</dt>
+                            <dd class="col-sm-7">{{ $purchase->vehicle->display_name }}</dd>
+
+                            <dt class="col-sm-5">Brand</dt>
+                            <dd class="col-sm-7">{{ $purchase->vehicle->brand?->name ?: 'N/A' }}</dd>
+
+                            <dt class="col-sm-5">Category</dt>
+                            <dd class="col-sm-7">{{ $purchase->vehicle->category?->name ?: 'N/A' }}</dd>
+
+                            <dt class="col-sm-5">Registration</dt>
+                            <dd class="col-sm-7">{{ $purchase->vehicle->registration_number ?: 'N/A' }}</dd>
+
+                            <dt class="col-sm-5">Engine</dt>
+                            <dd class="col-sm-7">{{ $purchase->vehicle->engine_number ?: 'N/A' }}</dd>
+                        </dl>
+                    @else
+                        <div class="text-muted">No vehicle linked to this purchase.</div>
+                    @endif
+                </div>
+            </div>
+
             <div class="card card-outline card-primary">
                 <div class="card-header">
                     <h3 class="card-title">Owner Information</h3>

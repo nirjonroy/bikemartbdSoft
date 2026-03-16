@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\BusinessSettingController;
+use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SellController;
+use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -29,6 +32,9 @@ Route::get('/dashboard', [DashboardController::class, 'index'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::resource('brands', BrandController::class)->except('show');
+    Route::resource('categories', CategoryController::class)->except('show');
+    Route::resource('vehicles', VehicleController::class);
     Route::resource('purchases', PurchaseController::class);
     Route::resource('sells', SellController::class);
     Route::get('/business-settings', [BusinessSettingController::class, 'edit'])->name('business-settings.edit');

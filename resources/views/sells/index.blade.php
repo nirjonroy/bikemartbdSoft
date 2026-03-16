@@ -20,8 +20,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Vehicle</th>
                             <th>Name</th>
-                            <th>Mobile</th>
                             <th>Selling Date</th>
                             <th>Selling Price</th>
                             <th>Picture</th>
@@ -32,10 +32,15 @@
                         @forelse ($sells as $sell)
                             <tr>
                                 <td>
-                                    <div class="fw-semibold">{{ $sell->name }}</div>
-                                    <div class="small text-muted">{{ $sell->father_name ?: 'Father name not added' }}</div>
+                                    <div class="fw-semibold">{{ $sell->vehicle?->display_name ?: 'Not linked' }}</div>
+                                    <div class="small text-muted">
+                                        {{ $sell->vehicle?->brand?->name ?: 'No brand' }} / {{ $sell->vehicle?->category?->name ?: 'No category' }}
+                                    </div>
                                 </td>
-                                <td>{{ $sell->mobile_number ?: 'N/A' }}</td>
+                                <td>
+                                    <div class="fw-semibold">{{ $sell->name }}</div>
+                                    <div class="small text-muted">{{ $sell->mobile_number ?: 'Mobile not added' }}</div>
+                                </td>
                                 <td>{{ $sell->selling_date?->format('d M Y') }}</td>
                                 <td>{{ number_format((float) $sell->selling_price_to_customer, 2) }}</td>
                                 <td>{{ $sell->pictures_count ? 'Uploaded' : 'No' }}</td>

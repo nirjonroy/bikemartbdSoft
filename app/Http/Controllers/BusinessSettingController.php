@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -52,15 +51,5 @@ class BusinessSettingController extends Controller
         return redirect()
             ->route('business-settings.edit')
             ->with('status', 'Business information updated successfully.');
-    }
-
-    private function getBusinessSetting(): BusinessSetting
-    {
-        return BusinessSetting::first() ?? BusinessSetting::create([
-            'business_name' => config('app.name', 'BikeMart POS'),
-            'email' => 'admin@bikemartbd.com',
-            'currency_code' => 'BDT',
-            'timezone' => config('app.timezone', 'UTC'),
-        ]);
     }
 }

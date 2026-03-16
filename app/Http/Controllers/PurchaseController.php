@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\BusinessSetting;
 use App\Models\Purchase;
 use App\Models\PurchaseDocument;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -14,6 +14,7 @@ class PurchaseController extends Controller
     public function index()
     {
         $purchases = Purchase::query()
+            ->with(['vehicle.brand', 'vehicle.category'])
             ->withCount(['pictureDocuments as pictures_count'])
             ->withSum('modifyingCosts as modifying_costs_sum', 'cost')
             ->latest('purchasing_date')
@@ -48,7 +49,7 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['documents', 'modifyingCosts']);
+        $purchase->load(['vehicle.brand', 'vehicle.category', 'documents', 'modifyingCosts']);
 
         return view('purchases.show', $this->formViewData([
             'purchase' => $purchase,
@@ -57,7 +58,7 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load(['documents', 'modifyingCosts']);
+        $purchase->load(['vehicle.brand', 'vehicle.category', 'documents', 'modifyingCosts']);
 
         return view('purchases.edit', $this->formViewData([
             'purchase' => $purchase,
@@ -97,17 +98,8 @@ class PurchaseController extends Controller
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'singleDocumentTypes' => PurchaseDocument::SINGLE_TYPES,
+            'vehicles' => Vehicle::query()->with(['brand', 'category'])->orderBy('name')->get(),
         ], $overrides);
-    }
-
-    private function getBusinessSetting(): BusinessSetting
-    {
-        return BusinessSetting::first() ?? BusinessSetting::create([
-            'business_name' => config('app.name', 'BikeMart POS'),
-            'email' => 'admin@bikemartbd.com',
-            'currency_code' => 'BDT',
-            'timezone' => config('app.timezone', 'UTC'),
-        ]);
     }
 
     private function validatedPurchaseData(Request $request): array
@@ -124,6 +116,7 @@ class PurchaseController extends Controller
         $validator = Validator::make(
             array_merge($request->all(), ['modifying_costs' => $modifyingCosts]),
             [
+                'vehicle_id' => ['required', 'exists:vehicles,id'],
                 'name' => ['required', 'string', 'max:255'],
                 'father_name' => ['nullable', 'string', 'max:255'],
                 'address' => ['nullable', 'string', 'max:1000'],

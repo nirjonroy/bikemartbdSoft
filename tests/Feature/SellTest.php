@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Sell;
 use App\Models\SellDocument;
 use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -19,8 +22,10 @@ class SellTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        $vehicle = $this->createVehicle();
 
         $response = $this->actingAs($user)->post(route('sells.store'), [
+            'vehicle_id' => $vehicle->id,
             'name' => 'Customer One',
             'father_name' => 'Father One',
             'address' => 'Dhaka, Bangladesh',
@@ -42,6 +47,7 @@ class SellTest extends TestCase
         $response->assertRedirect(route('sells.show', $sell));
 
         $this->assertDatabaseHas('sells', [
+            'vehicle_id' => $vehicle->id,
             'name' => 'Customer One',
             'mobile_number' => '01711111111',
         ]);
@@ -55,7 +61,14 @@ class SellTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        $vehicle = $this->createVehicle();
+        $updatedVehicle = $this->createVehicle([
+            'name' => 'Suzuki Gixxer SF',
+            'code' => 'BM-SELL-2',
+        ]);
+
         $sell = Sell::create([
+            'vehicle_id' => $vehicle->id,
             'name' => 'Old Customer',
             'father_name' => 'Old Father',
             'address' => 'Old Address',
@@ -78,6 +91,7 @@ class SellTest extends TestCase
         ]);
 
         $updateResponse = $this->actingAs($user)->put(route('sells.update', $sell), [
+            'vehicle_id' => $updatedVehicle->id,
             'name' => 'New Customer',
             'father_name' => 'New Father',
             'address' => 'New Address',
@@ -94,6 +108,7 @@ class SellTest extends TestCase
         $sell->refresh();
 
         $this->assertSame('New Customer', $sell->name);
+        $this->assertSame($updatedVehicle->id, $sell->vehicle_id);
         $this->assertDatabaseMissing('sell_documents', ['id' => $picture->id]);
         $this->assertDatabaseMissing('sell_documents', ['id' => $insurance->id]);
         $this->assertDatabaseHas('sell_documents', ['sell_id' => $sell->id, 'type' => 'registration_copy']);
@@ -102,5 +117,24 @@ class SellTest extends TestCase
 
         $deleteResponse->assertRedirect(route('sells.index'));
         $this->assertDatabaseMissing('sells', ['id' => $sell->id]);
+    }
+
+    private function createVehicle(array $overrides = []): Vehicle
+    {
+        $brand = Brand::create(['name' => uniqid('Brand ', true)]);
+        $category = Category::create(['name' => uniqid('Category ', true)]);
+
+        return Vehicle::create(array_merge([
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'name' => 'Honda CB Hornet',
+            'code' => uniqid('BM-', true),
+            'model' => 'CBS',
+            'registration_number' => uniqid('REG-', true),
+            'engine_number' => uniqid('ENG-', true),
+            'chassis_number' => uniqid('CHS-', true),
+            'color' => 'Red',
+            'year' => 2023,
+        ], $overrides));
     }
 }

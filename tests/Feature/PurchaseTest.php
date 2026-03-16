@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Purchase;
 use App\Models\PurchaseDocument;
 use App\Models\User;
+use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -19,8 +22,10 @@ class PurchaseTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        $vehicle = $this->createVehicle();
 
         $response = $this->actingAs($user)->post(route('purchases.store'), [
+            'vehicle_id' => $vehicle->id,
             'name' => 'Rahim Uddin',
             'father_name' => 'Karim Uddin',
             'address' => 'Dhaka, Bangladesh',
@@ -49,6 +54,7 @@ class PurchaseTest extends TestCase
         $response->assertRedirect(route('purchases.show', $purchase));
 
         $this->assertDatabaseHas('purchases', [
+            'vehicle_id' => $vehicle->id,
             'name' => 'Rahim Uddin',
             'mobile_number' => '01700000000',
         ]);
@@ -64,7 +70,14 @@ class PurchaseTest extends TestCase
         Storage::fake('public');
 
         $user = User::factory()->create();
+        $vehicle = $this->createVehicle();
+        $updatedVehicle = $this->createVehicle([
+            'name' => 'Hero Xtreme 160R',
+            'code' => 'BM-002',
+        ]);
+
         $purchase = Purchase::create([
+            'vehicle_id' => $vehicle->id,
             'name' => 'Old Name',
             'father_name' => 'Old Father',
             'address' => 'Old Address',
@@ -92,6 +105,7 @@ class PurchaseTest extends TestCase
         ]);
 
         $updateResponse = $this->actingAs($user)->put(route('purchases.update', $purchase), [
+            'vehicle_id' => $updatedVehicle->id,
             'name' => 'New Name',
             'father_name' => 'New Father',
             'address' => 'New Address',
@@ -112,6 +126,7 @@ class PurchaseTest extends TestCase
         $purchase->refresh();
 
         $this->assertSame('New Name', $purchase->name);
+        $this->assertSame($updatedVehicle->id, $purchase->vehicle_id);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $document->id]);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $picture->id]);
         $this->assertDatabaseCount('purchase_modifying_costs', 1);
@@ -120,5 +135,24 @@ class PurchaseTest extends TestCase
 
         $deleteResponse->assertRedirect(route('purchases.index'));
         $this->assertDatabaseMissing('purchases', ['id' => $purchase->id]);
+    }
+
+    private function createVehicle(array $overrides = []): Vehicle
+    {
+        $brand = Brand::create(['name' => uniqid('Brand ', true)]);
+        $category = Category::create(['name' => uniqid('Category ', true)]);
+
+        return Vehicle::create(array_merge([
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'name' => 'Yamaha FZ-S',
+            'code' => uniqid('BM-', true),
+            'model' => 'FI',
+            'registration_number' => uniqid('REG-', true),
+            'engine_number' => uniqid('ENG-', true),
+            'chassis_number' => uniqid('CHS-', true),
+            'color' => 'Blue',
+            'year' => 2024,
+        ], $overrides));
     }
 }
