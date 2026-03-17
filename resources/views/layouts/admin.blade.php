@@ -87,52 +87,9 @@
                                 <i class="bi bi-list"></i>
                             </a>
                         </li>
-                        @can('view dashboard')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
-                            </li>
-                        @endcan
-                        @can('manage users')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('users.index') }}" class="nav-link">Users</a>
-                            </li>
-                        @endcan
-                        @can('manage roles')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('roles.index') }}" class="nav-link">Roles</a>
-                            </li>
-                        @endcan
-                        @can('manage permissions')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('permissions.index') }}" class="nav-link">Permissions</a>
-                            </li>
-                        @endcan
-                        @can('manage vehicles')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('vehicles.index') }}" class="nav-link">Vehicles</a>
-                            </li>
-                        @endcan
-                        @can('manage purchases')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('purchases.index') }}" class="nav-link">Purchases</a>
-                            </li>
-                        @endcan
-                        @can('manage sales')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('sells.index') }}" class="nav-link">Sales</a>
-                            </li>
-                        @endcan
-                        @can('manage business settings')
-                            <li class="nav-item d-none d-md-block">
-                                <a href="{{ route('business-settings.edit') }}" class="nav-link">Business Info</a>
-                            </li>
-                        @endcan
                     </ul>
 
                     <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item me-2 d-none d-md-block">
-                            <span class="nav-link text-secondary">{{ now()->format('d M Y, h:i A') }}</span>
-                        </li>
                         <li class="nav-item dropdown user-menu">
                             <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                                 <img
@@ -307,8 +264,16 @@
                 <main class="app-content">
                     <div class="container-fluid">
                         @if (session('status'))
+                            @php
+                                $statusMessage = match (session('status')) {
+                                    'profile-updated' => 'Profile updated successfully.',
+                                    'password-updated' => 'Password updated successfully.',
+                                    'verification-link-sent' => 'A new verification link has been sent to your email address.',
+                                    default => session('status'),
+                                };
+                            @endphp
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                {{ session('status') }}
+                                {{ $statusMessage }}
                                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                             </div>
                         @endif
