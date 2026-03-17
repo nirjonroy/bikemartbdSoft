@@ -30,6 +30,7 @@ class PurchaseTest extends TestCase
             'father_name' => 'Karim Uddin',
             'address' => 'Dhaka, Bangladesh',
             'mobile_number' => '01700000000',
+            'quantity' => '4',
             'buying_price_from_owner' => '125000.00',
             'purchasing_date' => '2026-03-16',
             'extra_additional_note' => 'Owner delivered all papers.',
@@ -57,6 +58,7 @@ class PurchaseTest extends TestCase
             'vehicle_id' => $vehicle->id,
             'name' => 'Rahim Uddin',
             'mobile_number' => '01700000000',
+            'quantity' => 4,
         ]);
 
         $this->assertDatabaseCount('purchase_documents', 8);
@@ -82,6 +84,7 @@ class PurchaseTest extends TestCase
             'father_name' => 'Old Father',
             'address' => 'Old Address',
             'mobile_number' => '01800000000',
+            'quantity' => 1,
             'buying_price_from_owner' => '100000',
             'purchasing_date' => '2026-03-15',
             'extra_additional_note' => 'Old note',
@@ -110,6 +113,7 @@ class PurchaseTest extends TestCase
             'father_name' => 'New Father',
             'address' => 'New Address',
             'mobile_number' => '01900000000',
+            'quantity' => 3,
             'buying_price_from_owner' => '145000',
             'purchasing_date' => '2026-03-17',
             'extra_additional_note' => 'Updated note',
@@ -127,6 +131,7 @@ class PurchaseTest extends TestCase
 
         $this->assertSame('New Name', $purchase->name);
         $this->assertSame($updatedVehicle->id, $purchase->vehicle_id);
+        $this->assertSame(3, $purchase->quantity);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $document->id]);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $picture->id]);
         $this->assertDatabaseCount('purchase_modifying_costs', 1);
@@ -135,6 +140,109 @@ class PurchaseTest extends TestCase
 
         $deleteResponse->assertRedirect(route('purchases.index'));
         $this->assertDatabaseMissing('purchases', ['id' => $purchase->id]);
+    }
+
+    public function test_purchase_records_increase_stock_for_the_same_vehicle()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle();
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Existing Owner',
+            'quantity' => 3,
+            'buying_price_from_owner' => '100000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        $response = $this->actingAs($user)->post(route('purchases.store'), [
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Second Owner',
+            'quantity' => 2,
+            'buying_price_from_owner' => '120000',
+            'purchasing_date' => '2026-03-17',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseCount('purchases', 2);
+        $this->assertSame(5, $vehicle->fresh()->purchased_quantity);
+        $this->assertSame(5, $vehicle->fresh()->available_stock_quantity);
+    }
+
+    public function test_purchase_form_lists_all_vehicle_products()
+    {
+        $user = $this->createUserWithRole();
+        $inStockVehicle = $this->createVehicle([
+            'name' => 'In Stock Bike',
+            'code' => 'IN-STOCK',
+        ]);
+        $availableVehicle = $this->createVehicle([
+            'name' => 'Available Bike',
+            'code' => 'AVAILABLE',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $inStockVehicle->id,
+            'name' => 'Owner One',
+            'quantity' => 2,
+            'buying_price_from_owner' => '100000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('purchases.create'));
+
+        $response->assertOk();
+        $response->assertSee('Available Bike');
+        $response->assertSee('In Stock Bike');
+    }
+
+    public function test_purchase_index_can_be_filtered()
+    {
+        $user = $this->createUserWithRole();
+        $matchingVehicle = $this->createVehicle([
+            'name' => 'Filter Match Bike',
+            'code' => 'FILTER-MATCH',
+        ]);
+        $otherVehicle = $this->createVehicle([
+            'name' => 'Hidden Bike',
+            'code' => 'FILTER-HIDE',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $matchingVehicle->id,
+            'name' => 'Matched Owner',
+            'quantity' => 2,
+            'buying_price_from_owner' => '100000',
+            'purchasing_date' => '2026-03-17',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $matchingVehicle->id,
+            'name' => 'Old Owner',
+            'quantity' => 1,
+            'buying_price_from_owner' => '98000',
+            'purchasing_date' => '2026-03-10',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $otherVehicle->id,
+            'name' => 'Hidden Owner',
+            'quantity' => 3,
+            'buying_price_from_owner' => '110000',
+            'purchasing_date' => '2026-03-17',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('purchases.index', [
+            'search' => 'Matched Owner',
+            'brand_id' => $matchingVehicle->brand_id,
+            'category_id' => $matchingVehicle->category_id,
+            'date_from' => '2026-03-15',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Matched Owner');
+        $response->assertDontSee('Old Owner');
+        $response->assertDontSee('Hidden Owner');
     }
 
     private function createVehicle(array $overrides = []): Vehicle

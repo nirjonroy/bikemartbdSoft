@@ -15,7 +15,51 @@
                 <i class="bi bi-plus-circle me-1"></i>New Vehicle
             </a>
         </div>
+        <div class="card-body border-bottom">
+            <form method="GET" action="{{ route('vehicles.index') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-6">
+                        <label for="search" class="form-label">Search</label>
+                        <input
+                            type="text"
+                            id="search"
+                            name="search"
+                            class="form-control"
+                            value="{{ $search }}"
+                            placeholder="Vehicle, code, model, registration, engine"
+                        >
+                    </div>
+                    <div class="col-lg-3">
+                        <label for="brand_id" class="form-label">Brand</label>
+                        <select id="brand_id" name="brand_id" class="form-select">
+                            <option value="">All brands</option>
+                            @foreach ($brands as $brand)
+                                <option value="{{ $brand->id }}" @selected((string) $selectedBrandId === (string) $brand->id)>{{ $brand->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3">
+                        <label for="category_id" class="form-label">Category</label>
+                        <select id="category_id" name="category_id" class="form-select">
+                            <option value="">All categories</option>
+                            @foreach ($categories as $category)
+                                <option value="{{ $category->id }}" @selected((string) $selectedCategoryId === (string) $category->id)>{{ $category->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-lg-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel me-1"></i>Filter
+                        </button>
+                        <a href="{{ route('vehicles.index') }}" class="btn btn-outline-secondary">Reset</a>
+                    </div>
+                </div>
+            </form>
+        </div>
         <div class="card-body p-0">
+            <div class="px-3 py-2 border-bottom bg-light small text-muted">
+                Showing {{ $vehicles->total() }} vehicle {{ \Illuminate\Support\Str::plural('record', $vehicles->total()) }}.
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
                     <thead>
@@ -61,7 +105,9 @@
                         @empty
                             <tr>
                                 <td colspan="7" class="text-center py-5">
-                                    <div class="text-muted mb-3">No vehicles found.</div>
+                                    <div class="text-muted mb-3">
+                                        {{ $hasFilters ? 'No vehicles match the current filters.' : 'No vehicles found.' }}
+                                    </div>
                                     <a href="{{ route('vehicles.create') }}" class="btn btn-primary">Create the first vehicle</a>
                                 </td>
                             </tr>

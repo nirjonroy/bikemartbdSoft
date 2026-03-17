@@ -57,6 +57,9 @@
                         <dt class="col-sm-5">Mobile</dt>
                         <dd class="col-sm-7">{{ $purchase->mobile_number ?: 'N/A' }}</dd>
 
+                        <dt class="col-sm-5">Quantity</dt>
+                        <dd class="col-sm-7">{{ $purchase->quantity }}</dd>
+
                         <dt class="col-sm-5">Address</dt>
                         <dd class="col-sm-7">{{ $purchase->address ?: 'N/A' }}</dd>
 
@@ -74,6 +77,10 @@
                     <h3 class="card-title">Cost Summary</h3>
                 </div>
                 <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Quantity</span>
+                        <strong>{{ $purchase->quantity }}</strong>
+                    </div>
                     <div class="d-flex justify-content-between mb-2">
                         <span>Buying price</span>
                         <strong>{{ number_format((float) $purchase->buying_price_from_owner, 2) }}</strong>

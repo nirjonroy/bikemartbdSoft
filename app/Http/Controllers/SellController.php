@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Sell;
 use App\Models\SellDocument;
 use App\Models\Vehicle;
@@ -11,17 +13,67 @@ use Illuminate\Support\Facades\Validator;
 
 class SellController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        $vehicleId = (int) ($filters['vehicle_id'] ?? 0);
+        $brandId = (int) ($filters['brand_id'] ?? 0);
+        $categoryId = (int) ($filters['category_id'] ?? 0);
+        $dateFrom = $filters['date_from'] ?? null;
+        $dateTo = $filters['date_to'] ?? null;
+
         $sells = Sell::query()
             ->with(['vehicle.brand', 'vehicle.category'])
             ->withCount(['pictureDocuments as pictures_count'])
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($sellQuery) use ($search) {
+                    $sellQuery
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('father_name', 'like', "%{$search}%")
+                        ->orWhere('mobile_number', 'like', "%{$search}%")
+                        ->orWhere('address', 'like', "%{$search}%")
+                        ->orWhereHas('vehicle', function ($vehicleQuery) use ($search) {
+                            $vehicleQuery
+                                ->where('name', 'like', "%{$search}%")
+                                ->orWhere('code', 'like', "%{$search}%")
+                                ->orWhere('model', 'like', "%{$search}%")
+                                ->orWhere('registration_number', 'like', "%{$search}%")
+                                ->orWhereHas('brand', fn ($brandQuery) => $brandQuery->where('name', 'like', "%{$search}%"))
+                                ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"));
+                        });
+                });
+            })
+            ->when($vehicleId > 0, fn ($query) => $query->where('vehicle_id', $vehicleId))
+            ->when($brandId > 0, fn ($query) => $query->whereHas('vehicle', fn ($vehicleQuery) => $vehicleQuery->where('brand_id', $brandId)))
+            ->when($categoryId > 0, fn ($query) => $query->whereHas('vehicle', fn ($vehicleQuery) => $vehicleQuery->where('category_id', $categoryId)))
+            ->when($dateFrom, fn ($query) => $query->whereDate('selling_date', '>=', $dateFrom))
+            ->when($dateTo, fn ($query) => $query->whereDate('selling_date', '<=', $dateTo))
             ->latest('selling_date')
-            ->paginate(12);
+            ->paginate(12)
+            ->withQueryString();
 
         return view('sells.index', [
             'businessSetting' => $this->getBusinessSetting(),
             'sells' => $sells,
+            'search' => $search,
+            'selectedVehicleId' => $vehicleId ?: null,
+            'selectedBrandId' => $brandId ?: null,
+            'selectedCategoryId' => $categoryId ?: null,
+            'dateFrom' => $dateFrom,
+            'dateTo' => $dateTo,
+            'hasFilters' => $search !== '' || $vehicleId > 0 || $brandId > 0 || $categoryId > 0 || filled($dateFrom) || filled($dateTo),
+            'vehicles' => Vehicle::query()->with(['brand', 'category'])->orderBy('name')->get(),
+            'brands' => Brand::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('name')->get(),
         ]);
     }
 
@@ -67,7 +119,7 @@ class SellController extends Controller
     {
         $sell->load('documents');
 
-        $sell->update($this->validatedSellData($request));
+        $sell->update($this->validatedSellData($request, $sell));
 
         $this->syncDocuments($request, $sell);
 
@@ -90,14 +142,17 @@ class SellController extends Controller
 
     private function formViewData(array $overrides = []): array
     {
+        /** @var \App\Models\Sell|null $sell */
+        $sell = $overrides['sell'] ?? null;
+
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'documentTypes' => SellDocument::FILE_TYPES,
-            'vehicles' => Vehicle::query()->with(['brand', 'category'])->orderBy('name')->get(),
+            'vehicles' => $this->availableVehiclesForSale($sell),
         ], $overrides);
     }
 
-    private function validatedSellData(Request $request): array
+    private function validatedSellData(Request $request, ?Sell $sell = null): array
     {
         $validator = Validator::make($request->all(), [
             'vehicle_id' => ['required', 'exists:vehicles,id'],
@@ -105,6 +160,7 @@ class SellController extends Controller
             'father_name' => ['nullable', 'string', 'max:255'],
             'address' => ['nullable', 'string', 'max:1000'],
             'mobile_number' => ['nullable', 'string', 'max:50'],
+            'quantity' => ['required', 'integer', 'min:1'],
             'selling_price_to_customer' => ['required', 'numeric', 'min:0'],
             'selling_date' => ['required', 'date'],
             'extra_additional_note' => ['nullable', 'string', 'max:2000'],
@@ -119,11 +175,63 @@ class SellController extends Controller
             'remove_documents.*' => ['string', 'in:' . implode(',', array_keys(SellDocument::FILE_TYPES))],
         ]);
 
+        $validator->after(function ($validator) use ($request, $sell) {
+            $vehicleId = (int) $request->input('vehicle_id');
+            $requestedQuantity = (int) $request->input('quantity');
+
+            if (! $vehicleId || ! $requestedQuantity) {
+                return;
+            }
+
+            $vehicle = Vehicle::query()
+                ->with(['latestPurchase', 'latestSell'])
+                ->withSum('purchases as purchased_quantity_total', 'quantity')
+                ->withSum('sells as sold_quantity_total', 'quantity')
+                ->find($vehicleId);
+
+            if (! $vehicle) {
+                return;
+            }
+
+            $availableQuantity = $vehicle->available_stock_quantity;
+
+            if ($sell && $vehicleId === (int) $sell->vehicle_id) {
+                $availableQuantity += (int) $sell->quantity;
+            }
+
+            if ($availableQuantity <= 0) {
+                $validator->errors()->add('vehicle_id', 'Only vehicles that are currently in stock can be sold.');
+                return;
+            }
+
+            if ($requestedQuantity > $availableQuantity) {
+                $validator->errors()->add('quantity', "Only {$availableQuantity} item(s) are currently available in stock for this vehicle.");
+            }
+        });
+
         $validated = $validator->validate();
 
         return collect($validated)
             ->except(array_merge(['remove_documents'], array_keys(SellDocument::FILE_TYPES)))
             ->all();
+    }
+
+    private function availableVehiclesForSale(?Sell $sell = null)
+    {
+        return Vehicle::query()
+            ->with(['brand', 'category', 'latestPurchase', 'latestSell'])
+            ->withSum('purchases as purchased_quantity_total', 'quantity')
+            ->withSum('sells as sold_quantity_total', 'quantity')
+            ->orderBy('name')
+            ->get()
+            ->filter(function (Vehicle $vehicle) use ($sell) {
+                if ($sell && (int) $sell->vehicle_id === (int) $vehicle->id) {
+                    return true;
+                }
+
+                return $vehicle->isAvailableForSale();
+            })
+            ->values();
     }
 
     private function syncDocuments(Request $request, Sell $sell): void

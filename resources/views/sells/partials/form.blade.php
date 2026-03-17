@@ -12,8 +12,12 @@
     <div class="card-body">
         @if ($vehicles->isEmpty())
             <div class="alert alert-warning">
-                Add at least one vehicle before recording a sale.
-                <a href="{{ route('vehicles.create') }}" class="alert-link">Create vehicle</a>
+                No vehicles are currently available for sale.
+                Record a purchase first so the vehicle enters stock.
+            </div>
+        @else
+            <div class="alert alert-info">
+                Sale entries reduce stock by the quantity you enter here. Quantity cannot exceed the available stock.
             </div>
         @endif
 
@@ -39,6 +43,14 @@
                             Registration: {{ $selectedVehicle->registration_number ?: 'Not added' }} |
                             Engine: {{ $selectedVehicle->engine_number ?: 'Not added' }}
                         </div>
+                        <div class="small text-muted mt-2">
+                            Purchased: {{ $selectedVehicle->purchased_quantity }} |
+                            Sold: {{ $selectedVehicle->sold_quantity }} |
+                            Available: {{ $selectedVehicle->available_stock_quantity }}
+                        </div>
+                        <div class="small mt-2">
+                            <span class="badge {{ $selectedVehicle->stock_badge_class }}">{{ $selectedVehicle->stock_status }}</span>
+                        </div>
                     @else
                         <div class="text-muted">Select a vehicle to connect this sale record.</div>
                     @endif
@@ -55,9 +67,23 @@
                 <input type="text" id="father_name" name="father_name" class="form-control @error('father_name') is-invalid @enderror" value="{{ old('father_name', $sell->father_name) }}">
             </div>
 
-            <div class="col-md-6">
+            <div class="col-md-4">
                 <label for="mobile_number" class="form-label">Mobile Number</label>
                 <input type="text" id="mobile_number" name="mobile_number" class="form-control @error('mobile_number') is-invalid @enderror" value="{{ old('mobile_number', $sell->mobile_number) }}">
+            </div>
+
+            <div class="col-md-2">
+                <label for="quantity" class="form-label">Quantity</label>
+                <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    id="quantity"
+                    name="quantity"
+                    class="form-control @error('quantity') is-invalid @enderror"
+                    value="{{ old('quantity', $sell->quantity ?? 1) }}"
+                    required
+                >
             </div>
 
             <div class="col-md-3">

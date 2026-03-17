@@ -14,6 +14,7 @@ class Purchase extends Model
         'father_name',
         'address',
         'mobile_number',
+        'quantity',
         'buying_price_from_owner',
         'purchasing_date',
         'extra_additional_note',
@@ -21,6 +22,7 @@ class Purchase extends Model
 
     protected $casts = [
         'vehicle_id' => 'integer',
+        'quantity' => 'integer',
         'buying_price_from_owner' => 'decimal:2',
         'purchasing_date' => 'date',
     ];

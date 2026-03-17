@@ -57,6 +57,9 @@
                         <dt class="col-sm-5">Mobile</dt>
                         <dd class="col-sm-7">{{ $sell->mobile_number ?: 'N/A' }}</dd>
 
+                        <dt class="col-sm-5">Quantity</dt>
+                        <dd class="col-sm-7">{{ $sell->quantity }}</dd>
+
                         <dt class="col-sm-5">Address</dt>
                         <dd class="col-sm-7">{{ $sell->address ?: 'N/A' }}</dd>
 

@@ -9,15 +9,48 @@ use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
+            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+        ]);
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        $brandId = (int) ($filters['brand_id'] ?? 0);
+        $categoryId = (int) ($filters['category_id'] ?? 0);
+
         return view('vehicles.index', [
             'businessSetting' => $this->getBusinessSetting(),
             'vehicles' => Vehicle::query()
                 ->with(['brand', 'category'])
                 ->withCount(['purchases', 'sells'])
+                ->when($search !== '', function ($query) use ($search) {
+                    $query->where(function ($vehicleQuery) use ($search) {
+                        $vehicleQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%")
+                            ->orWhere('model', 'like', "%{$search}%")
+                            ->orWhere('registration_number', 'like', "%{$search}%")
+                            ->orWhere('engine_number', 'like', "%{$search}%")
+                            ->orWhere('chassis_number', 'like', "%{$search}%")
+                            ->orWhere('color', 'like', "%{$search}%")
+                            ->orWhereHas('brand', fn ($brandQuery) => $brandQuery->where('name', 'like', "%{$search}%"))
+                            ->orWhereHas('category', fn ($categoryQuery) => $categoryQuery->where('name', 'like', "%{$search}%"));
+                    });
+                })
+                ->when($brandId > 0, fn ($query) => $query->where('brand_id', $brandId))
+                ->when($categoryId > 0, fn ($query) => $query->where('category_id', $categoryId))
                 ->latest()
-                ->paginate(12),
+                ->paginate(12)
+                ->withQueryString(),
+            'search' => $search,
+            'selectedBrandId' => $brandId ?: null,
+            'selectedCategoryId' => $categoryId ?: null,
+            'hasFilters' => $search !== '' || $brandId > 0 || $categoryId > 0,
+            'brands' => Brand::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('name')->get(),
         ]);
     }
 

@@ -9,6 +9,7 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\SellController;
+use App\Http\Controllers\StockManagementController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
@@ -41,6 +42,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('brands', BrandController::class)->except('show')->middleware('permission:manage brands');
     Route::resource('categories', CategoryController::class)->except('show')->middleware('permission:manage categories');
     Route::resource('vehicles', VehicleController::class)->middleware('permission:manage vehicles');
+    Route::get('/stock-management', [StockManagementController::class, 'index'])
+        ->middleware('permission:manage stock')
+        ->name('stock.index');
     Route::resource('purchases', PurchaseController::class)->middleware('permission:manage purchases');
     Route::resource('sells', SellController::class)->middleware('permission:manage sales');
     Route::get('/business-settings', [BusinessSettingController::class, 'edit'])

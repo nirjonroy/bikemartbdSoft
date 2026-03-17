@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Purchase;
 use App\Models\Sell;
 use App\Models\SellDocument;
 use App\Models\Vehicle;
@@ -24,12 +25,21 @@ class SellTest extends TestCase
         $user = $this->createUserWithRole();
         $vehicle = $this->createVehicle();
 
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Owner One',
+            'quantity' => 5,
+            'buying_price_from_owner' => '135000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
         $response = $this->actingAs($user)->post(route('sells.store'), [
             'vehicle_id' => $vehicle->id,
             'name' => 'Customer One',
             'father_name' => 'Father One',
             'address' => 'Dhaka, Bangladesh',
             'mobile_number' => '01711111111',
+            'quantity' => '2',
             'selling_price_to_customer' => '175000.00',
             'selling_date' => '2026-03-16',
             'extra_additional_note' => 'Customer collected documents.',
@@ -50,6 +60,7 @@ class SellTest extends TestCase
             'vehicle_id' => $vehicle->id,
             'name' => 'Customer One',
             'mobile_number' => '01711111111',
+            'quantity' => 2,
         ]);
 
         $this->assertDatabaseCount('sell_documents', 7);
@@ -67,12 +78,29 @@ class SellTest extends TestCase
             'code' => 'BM-SELL-2',
         ]);
 
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Owner For Vehicle One',
+            'quantity' => 3,
+            'buying_price_from_owner' => '85000',
+            'purchasing_date' => '2026-03-14',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $updatedVehicle->id,
+            'name' => 'Owner For Vehicle Two',
+            'quantity' => 4,
+            'buying_price_from_owner' => '90000',
+            'purchasing_date' => '2026-03-16',
+        ]);
+
         $sell = Sell::create([
             'vehicle_id' => $vehicle->id,
             'name' => 'Old Customer',
             'father_name' => 'Old Father',
             'address' => 'Old Address',
             'mobile_number' => '01811111111',
+            'quantity' => 1,
             'selling_price_to_customer' => '95000',
             'selling_date' => '2026-03-15',
             'extra_additional_note' => 'Old note',
@@ -96,6 +124,7 @@ class SellTest extends TestCase
             'father_name' => 'New Father',
             'address' => 'New Address',
             'mobile_number' => '01911111111',
+            'quantity' => 2,
             'selling_price_to_customer' => '115000',
             'selling_date' => '2026-03-17',
             'extra_additional_note' => 'Updated note',
@@ -109,6 +138,7 @@ class SellTest extends TestCase
 
         $this->assertSame('New Customer', $sell->name);
         $this->assertSame($updatedVehicle->id, $sell->vehicle_id);
+        $this->assertSame(2, $sell->quantity);
         $this->assertDatabaseMissing('sell_documents', ['id' => $picture->id]);
         $this->assertDatabaseMissing('sell_documents', ['id' => $insurance->id]);
         $this->assertDatabaseHas('sell_documents', ['sell_id' => $sell->id, 'type' => 'registration_copy']);
@@ -117,6 +147,149 @@ class SellTest extends TestCase
 
         $deleteResponse->assertRedirect(route('sells.index'));
         $this->assertDatabaseMissing('sells', ['id' => $sell->id]);
+    }
+
+    public function test_cannot_create_a_sale_for_a_vehicle_that_is_not_in_stock()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle();
+
+        $response = $this->actingAs($user)->post(route('sells.store'), [
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Customer Two',
+            'quantity' => 1,
+            'selling_price_to_customer' => '125000',
+            'selling_date' => '2026-03-17',
+        ]);
+
+        $response->assertSessionHasErrors('vehicle_id');
+        $this->assertDatabaseCount('sells', 0);
+    }
+
+    public function test_sale_records_reduce_available_stock_quantity()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle();
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Owner One',
+            'quantity' => 4,
+            'buying_price_from_owner' => '145000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        Sell::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Customer One',
+            'quantity' => 3,
+            'selling_price_to_customer' => '165000',
+            'selling_date' => '2026-03-16',
+        ]);
+
+        $response = $this->actingAs($user)->post(route('sells.store'), [
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Customer Two',
+            'quantity' => 2,
+            'selling_price_to_customer' => '170000',
+            'selling_date' => '2026-03-17',
+        ]);
+
+        $response->assertSessionHasErrors('quantity');
+        $this->assertDatabaseCount('sells', 1);
+        $this->assertSame(1, $vehicle->fresh()->available_stock_quantity);
+    }
+
+    public function test_sale_form_only_lists_vehicles_that_are_currently_in_stock()
+    {
+        $user = $this->createUserWithRole();
+        $inStockVehicle = $this->createVehicle([
+            'name' => 'Ready To Sell',
+            'code' => 'READY',
+        ]);
+        $awaitingPurchaseVehicle = $this->createVehicle([
+            'name' => 'Awaiting Purchase',
+            'code' => 'AWAIT',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $inStockVehicle->id,
+            'name' => 'Owner One',
+            'quantity' => 2,
+            'buying_price_from_owner' => '145000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('sells.create'));
+
+        $response->assertOk();
+        $response->assertSee('Ready To Sell');
+        $response->assertDontSee('Awaiting Purchase');
+    }
+
+    public function test_sale_index_can_be_filtered()
+    {
+        $user = $this->createUserWithRole();
+        $matchingVehicle = $this->createVehicle([
+            'name' => 'Filter Ready Bike',
+            'code' => 'SELL-MATCH',
+        ]);
+        $otherVehicle = $this->createVehicle([
+            'name' => 'Filter Hidden Bike',
+            'code' => 'SELL-HIDE',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $matchingVehicle->id,
+            'name' => 'Owner Match',
+            'quantity' => 5,
+            'buying_price_from_owner' => '130000',
+            'purchasing_date' => '2026-03-10',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $otherVehicle->id,
+            'name' => 'Owner Hidden',
+            'quantity' => 5,
+            'buying_price_from_owner' => '135000',
+            'purchasing_date' => '2026-03-10',
+        ]);
+
+        Sell::create([
+            'vehicle_id' => $matchingVehicle->id,
+            'name' => 'Matched Customer',
+            'quantity' => 2,
+            'selling_price_to_customer' => '160000',
+            'selling_date' => '2026-03-17',
+        ]);
+
+        Sell::create([
+            'vehicle_id' => $matchingVehicle->id,
+            'name' => 'Old Customer',
+            'quantity' => 1,
+            'selling_price_to_customer' => '150000',
+            'selling_date' => '2026-03-11',
+        ]);
+
+        Sell::create([
+            'vehicle_id' => $otherVehicle->id,
+            'name' => 'Hidden Customer',
+            'quantity' => 2,
+            'selling_price_to_customer' => '165000',
+            'selling_date' => '2026-03-17',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('sells.index', [
+            'search' => 'Matched Customer',
+            'brand_id' => $matchingVehicle->brand_id,
+            'category_id' => $matchingVehicle->category_id,
+            'date_from' => '2026-03-15',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Matched Customer');
+        $response->assertDontSee('Old Customer');
+        $response->assertDontSee('Hidden Customer');
     }
 
     private function createVehicle(array $overrides = []): Vehicle

@@ -14,6 +14,7 @@ class Sell extends Model
         'father_name',
         'address',
         'mobile_number',
+        'quantity',
         'selling_price_to_customer',
         'selling_date',
         'extra_additional_note',
@@ -21,6 +22,7 @@ class Sell extends Model
 
     protected $casts = [
         'vehicle_id' => 'integer',
+        'quantity' => 'integer',
         'selling_price_to_customer' => 'decimal:2',
         'selling_date' => 'date',
     ];

@@ -74,4 +74,51 @@ class VehicleTest extends TestCase
         $deleteResponse->assertRedirect(route('vehicles.index'));
         $this->assertDatabaseMissing('vehicles', ['id' => $vehicle->id]);
     }
+
+    public function test_vehicle_index_can_be_filtered()
+    {
+        $user = $this->createUserWithRole();
+        $matchingBrand = Brand::create(['name' => 'Yamaha']);
+        $matchingCategory = Category::create(['name' => 'Sports']);
+        $otherBrand = Brand::create(['name' => 'Hero']);
+        $otherCategory = Category::create(['name' => 'Scooter']);
+
+        Vehicle::create([
+            'brand_id' => $matchingBrand->id,
+            'category_id' => $matchingCategory->id,
+            'name' => 'R15 V4',
+            'code' => 'YMH-01',
+            'model' => 'Race Edition',
+            'registration_number' => 'DHK-R15',
+        ]);
+
+        Vehicle::create([
+            'brand_id' => $matchingBrand->id,
+            'category_id' => $matchingCategory->id,
+            'name' => 'FZ-X',
+            'code' => 'YMH-02',
+            'model' => 'Classic',
+            'registration_number' => 'DHK-FZX',
+        ]);
+
+        Vehicle::create([
+            'brand_id' => $otherBrand->id,
+            'category_id' => $otherCategory->id,
+            'name' => 'Pleasure',
+            'code' => 'HER-01',
+            'model' => 'Scooter',
+            'registration_number' => 'DHK-PLS',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('vehicles.index', [
+            'search' => 'R15',
+            'brand_id' => $matchingBrand->id,
+            'category_id' => $matchingCategory->id,
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('R15 V4');
+        $response->assertDontSee('FZ-X');
+        $response->assertDontSee('Pleasure');
+    }
 }

@@ -183,6 +183,14 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('manage stock')
+                                <li class="nav-item">
+                                    <a href="{{ route('stock.index') }}" class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-box-seam"></i>
+                                        <p>Stock Management</p>
+                                    </a>
+                                </li>
+                            @endcan
                             @can('manage purchases')
                                 <li class="nav-item">
                                     <a href="{{ route('purchases.index') }}" class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
