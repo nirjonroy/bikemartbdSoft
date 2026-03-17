@@ -15,7 +15,7 @@ class AdminUserSeeder extends Seeder
      */
     public function run()
     {
-        User::updateOrCreate(
+        $user = User::updateOrCreate(
             ['email' => 'admin@bikemartbd.com'],
             [
                 'name' => 'Admin',
@@ -23,5 +23,7 @@ class AdminUserSeeder extends Seeder
                 'password' => Hash::make('bikemart321#'),
             ]
         );
+
+        $user->syncRoles(['super-admin']);
     }
 }

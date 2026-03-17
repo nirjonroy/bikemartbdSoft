@@ -6,22 +6,22 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Sell;
 use App\Models\SellDocument;
-use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class SellTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_create_a_sale_with_documents()
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
         $vehicle = $this->createVehicle();
 
         $response = $this->actingAs($user)->post(route('sells.store'), [
@@ -60,7 +60,7 @@ class SellTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
         $vehicle = $this->createVehicle();
         $updatedVehicle = $this->createVehicle([
             'name' => 'Suzuki Gixxer SF',

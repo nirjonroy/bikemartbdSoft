@@ -87,21 +87,46 @@
                                 <i class="bi bi-list"></i>
                             </a>
                         </li>
-                        <li class="nav-item d-none d-md-block">
-                            <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
-                        </li>
-                        <li class="nav-item d-none d-md-block">
-                            <a href="{{ route('vehicles.index') }}" class="nav-link">Vehicles</a>
-                        </li>
-                        <li class="nav-item d-none d-md-block">
-                            <a href="{{ route('purchases.index') }}" class="nav-link">Purchases</a>
-                        </li>
-                        <li class="nav-item d-none d-md-block">
-                            <a href="{{ route('sells.index') }}" class="nav-link">Sales</a>
-                        </li>
-                        <li class="nav-item d-none d-md-block">
-                            <a href="{{ route('business-settings.edit') }}" class="nav-link">Business Info</a>
-                        </li>
+                        @can('view dashboard')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('dashboard') }}" class="nav-link">Dashboard</a>
+                            </li>
+                        @endcan
+                        @can('manage users')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('users.index') }}" class="nav-link">Users</a>
+                            </li>
+                        @endcan
+                        @can('manage roles')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('roles.index') }}" class="nav-link">Roles</a>
+                            </li>
+                        @endcan
+                        @can('manage permissions')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('permissions.index') }}" class="nav-link">Permissions</a>
+                            </li>
+                        @endcan
+                        @can('manage vehicles')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('vehicles.index') }}" class="nav-link">Vehicles</a>
+                            </li>
+                        @endcan
+                        @can('manage purchases')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('purchases.index') }}" class="nav-link">Purchases</a>
+                            </li>
+                        @endcan
+                        @can('manage sales')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('sells.index') }}" class="nav-link">Sales</a>
+                            </li>
+                        @endcan
+                        @can('manage business settings')
+                            <li class="nav-item d-none d-md-block">
+                                <a href="{{ route('business-settings.edit') }}" class="nav-link">Business Info</a>
+                            </li>
+                        @endcan
                     </ul>
 
                     <ul class="navbar-nav ms-auto align-items-center">
@@ -167,50 +192,88 @@
                             aria-label="Main navigation"
                             data-accordion="false"
                         >
-                            <li class="nav-item">
-                                <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-bookmark-star"></i>
-                                    <p>Brands</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('categories.index') }}" class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-diagram-3"></i>
-                                    <p>Categories</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('vehicles.index') }}" class="nav-link {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-bicycle"></i>
-                                    <p>Vehicles</p>
-                                </a>
-                            </li>
+                            @can('manage brands')
+                                <li class="nav-item">
+                                    <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-bookmark-star"></i>
+                                        <p>Brands</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage categories')
+                                <li class="nav-item">
+                                    <a href="{{ route('categories.index') }}" class="nav-link {{ request()->routeIs('categories.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-diagram-3"></i>
+                                        <p>Categories</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage vehicles')
+                                <li class="nav-item">
+                                    <a href="{{ route('vehicles.index') }}" class="nav-link {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-bicycle"></i>
+                                        <p>Vehicles</p>
+                                    </a>
+                                </li>
+                            @endcan
 
                             <li class="nav-header">OPERATIONS</li>
-                            <li class="nav-item">
-                                <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-speedometer2"></i>
-                                    <p>Dashboard</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('purchases.index') }}" class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-bag-check"></i>
-                                    <p>Purchases</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('sells.index') }}" class="nav-link {{ request()->routeIs('sells.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-cash-stack"></i>
-                                    <p>Sales</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('business-settings.edit') }}" class="nav-link {{ request()->routeIs('business-settings.*') ? 'active' : '' }}">
-                                    <i class="nav-icon bi bi-building-gear"></i>
-                                    <p>Business Information</p>
-                                </a>
-                            </li>
+                            @can('view dashboard')
+                                <li class="nav-item">
+                                    <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-speedometer2"></i>
+                                        <p>Dashboard</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage purchases')
+                                <li class="nav-item">
+                                    <a href="{{ route('purchases.index') }}" class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-bag-check"></i>
+                                        <p>Purchases</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage sales')
+                                <li class="nav-item">
+                                    <a href="{{ route('sells.index') }}" class="nav-link {{ request()->routeIs('sells.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-cash-stack"></i>
+                                        <p>Sales</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage business settings')
+                                <li class="nav-item">
+                                    <a href="{{ route('business-settings.edit') }}" class="nav-link {{ request()->routeIs('business-settings.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-building-gear"></i>
+                                        <p>Business Information</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage users')
+                                <li class="nav-item">
+                                    <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-people"></i>
+                                        <p>Users</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage roles')
+                                <li class="nav-item">
+                                    <a href="{{ route('roles.index') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-person-badge"></i>
+                                        <p>Roles</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage permissions')
+                                <li class="nav-item">
+                                    <a href="{{ route('permissions.index') }}" class="nav-link {{ request()->routeIs('permissions.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-shield-lock"></i>
+                                        <p>Permissions</p>
+                                    </a>
+                                </li>
+                            @endcan
                             <li class="nav-item">
                                 <a href="{{ route('profile.edit') }}" class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}">
                                     <i class="nav-icon bi bi-person-circle"></i>
@@ -218,21 +281,6 @@
                                 </a>
                             </li>
 
-                            <li class="nav-header">BUSINESS SNAPSHOT</li>
-                            <li class="nav-item px-3 py-2 text-body-secondary small">
-                                <div class="mb-2">Primary email</div>
-                                <div class="fw-semibold text-white">{{ $businessSetting?->email ?: 'Not set yet' }}</div>
-                            </li>
-                            <li class="nav-item px-3 py-2 text-body-secondary small">
-                                <div class="mb-2">Phone</div>
-                                <div class="fw-semibold text-white">{{ $businessSetting?->phone ?: 'Not set yet' }}</div>
-                            </li>
-                            <li class="nav-item px-3 py-2 text-body-secondary small">
-                                <div class="mb-2">Currency / Timezone</div>
-                                <div class="fw-semibold text-white">
-                                    {{ $businessSetting?->currency_code ?: 'BDT' }} / {{ $businessSetting?->timezone ?: config('app.timezone') }}
-                                </div>
-                            </li>
                         </ul>
                     </nav>
                 </div>

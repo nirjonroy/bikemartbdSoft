@@ -7,15 +7,16 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class BusinessSettingTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_view_business_settings_page()
     {
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
 
         $response = $this->actingAs($user)->get(route('business-settings.edit'));
 
@@ -27,7 +28,7 @@ class BusinessSettingTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
 
         $response = $this->actingAs($user)->from(route('business-settings.edit'))->put(
             route('business-settings.update'),

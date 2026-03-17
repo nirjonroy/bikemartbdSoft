@@ -6,22 +6,22 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Purchase;
 use App\Models\PurchaseDocument;
-use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class PurchaseTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_create_a_purchase_with_documents_and_costs()
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
         $vehicle = $this->createVehicle();
 
         $response = $this->actingAs($user)->post(route('purchases.store'), [
@@ -69,7 +69,7 @@ class PurchaseTest extends TestCase
     {
         Storage::fake('public');
 
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
         $vehicle = $this->createVehicle();
         $updatedVehicle = $this->createVehicle([
             'name' => 'Hero Xtreme 160R',

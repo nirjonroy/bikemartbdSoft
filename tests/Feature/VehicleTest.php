@@ -4,18 +4,18 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
-use App\Models\User;
 use App\Models\Vehicle;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class VehicleTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_create_view_update_and_delete_a_vehicle()
     {
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
         $brand = Brand::create(['name' => 'Honda']);
         $updatedBrand = Brand::create(['name' => 'Suzuki']);
         $category = Category::create(['name' => 'Commuter']);

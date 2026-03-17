@@ -3,17 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class BrandTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_create_update_and_delete_a_brand()
     {
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
 
         $storeResponse = $this->actingAs($user)->post(route('brands.store'), [
             'name' => 'Yamaha',

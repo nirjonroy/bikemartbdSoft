@@ -3,17 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\InteractsWithRoles;
 use Tests\TestCase;
 
 class CategoryTest extends TestCase
 {
-    use RefreshDatabase;
+    use InteractsWithRoles, RefreshDatabase;
 
     public function test_authenticated_users_can_create_update_and_delete_a_category()
     {
-        $user = User::factory()->create();
+        $user = $this->createUserWithRole();
 
         $storeResponse = $this->actingAs($user)->post(route('categories.store'), [
             'name' => 'Sports Bike',
