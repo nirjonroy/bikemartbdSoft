@@ -10,6 +10,8 @@
     $costRows = old('modifying_costs', $existingCosts);
     $selectedVehicleId = old('vehicle_id', request('vehicle_id', $purchase->vehicle_id));
     $selectedVehicle = $vehicles->firstWhere('id', (int) $selectedVehicleId);
+    $selectedPaymentStatus = old('payment_status', $purchase->payment_status ?: 'unpaid');
+    $selectedPaymentMethod = old('payment_method', $purchase->payment_method);
 
     if (empty($costRows)) {
         $costRows = [['reason' => '', 'cost' => '']];
@@ -123,9 +125,33 @@
                 >
             </div>
 
+            <div class="col-md-4">
+                <label for="payment_status" class="form-label">Payment Status</label>
+                <select id="payment_status" name="payment_status" class="form-select @error('payment_status') is-invalid @enderror">
+                    @foreach ($paymentStatusOptions as $value => $label)
+                        <option value="{{ $value }}" @selected((string) $selectedPaymentStatus === (string) $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label for="payment_method" class="form-label">Payment Method</label>
+                <select id="payment_method" name="payment_method" class="form-select @error('payment_method') is-invalid @enderror">
+                    <option value="">Select payment method</option>
+                    @foreach ($paymentMethodOptions as $value => $label)
+                        <option value="{{ $value }}" @selected((string) $selectedPaymentMethod === (string) $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <div class="col-12">
                 <label for="address" class="form-label">Address</label>
                 <textarea id="address" name="address" rows="3" class="form-control @error('address') is-invalid @enderror">{{ old('address', $purchase->address) }}</textarea>
+            </div>
+
+            <div class="col-12">
+                <label for="payment_information" class="form-label">Payment Information</label>
+                <textarea id="payment_information" name="payment_information" rows="3" class="form-control @error('payment_information') is-invalid @enderror" placeholder="Transaction id, account number, cheque details or other payment notes">{{ old('payment_information', $purchase->payment_information) }}</textarea>
             </div>
 
             <div class="col-12">
@@ -293,3 +319,4 @@
         })();
     </script>
 @endpush
+

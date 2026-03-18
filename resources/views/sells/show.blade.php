@@ -72,6 +72,24 @@
                 </div>
             </div>
 
+            <div class="card card-outline card-warning">
+                <div class="card-header">
+                    <h3 class="card-title">Payment Details</h3>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-5">Status</dt>
+                        <dd class="col-sm-7"><span class="badge {{ $sell->payment_status_badge_class }}">{{ $sell->payment_status_label }}</span></dd>
+
+                        <dt class="col-sm-5">Method</dt>
+                        <dd class="col-sm-7">{{ $sell->payment_method_label }}</dd>
+
+                        <dt class="col-sm-5">Information</dt>
+                        <dd class="col-sm-7">{{ $sell->payment_information ?: 'N/A' }}</dd>
+                    </dl>
+                </div>
+            </div>
+
             <div class="card card-outline card-success">
                 <div class="card-header">
                     <h3 class="card-title">Additional Note</h3>

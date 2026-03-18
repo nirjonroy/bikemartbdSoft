@@ -32,6 +32,9 @@ class PurchaseTest extends TestCase
             'mobile_number' => '01700000000',
             'quantity' => '4',
             'buying_price_from_owner' => '125000.00',
+            'payment_status' => 'paid',
+            'payment_method' => 'bank_transfer',
+            'payment_information' => 'Bank reference TXN-1001',
             'purchasing_date' => '2026-03-16',
             'extra_additional_note' => 'Owner delivered all papers.',
             'pictures' => [
@@ -59,6 +62,8 @@ class PurchaseTest extends TestCase
             'name' => 'Rahim Uddin',
             'mobile_number' => '01700000000',
             'quantity' => 4,
+            'payment_status' => 'paid',
+            'payment_method' => 'bank_transfer',
         ]);
 
         $this->assertDatabaseCount('purchase_documents', 8);
@@ -115,6 +120,9 @@ class PurchaseTest extends TestCase
             'mobile_number' => '01900000000',
             'quantity' => 3,
             'buying_price_from_owner' => '145000',
+            'payment_status' => 'partial',
+            'payment_method' => 'mobile_banking',
+            'payment_information' => 'bKash partial payment collected',
             'purchasing_date' => '2026-03-17',
             'extra_additional_note' => 'Updated note',
             'remove_documents' => ['nid_copy'],
@@ -132,6 +140,8 @@ class PurchaseTest extends TestCase
         $this->assertSame('New Name', $purchase->name);
         $this->assertSame($updatedVehicle->id, $purchase->vehicle_id);
         $this->assertSame(3, $purchase->quantity);
+        $this->assertSame('partial', $purchase->payment_status);
+        $this->assertSame('mobile_banking', $purchase->payment_method);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $document->id]);
         $this->assertDatabaseMissing('purchase_documents', ['id' => $picture->id]);
         $this->assertDatabaseCount('purchase_modifying_costs', 1);

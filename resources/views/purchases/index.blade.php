@@ -88,6 +88,7 @@
                             <th>Quantity</th>
                             <th>Purchase Date</th>
                             <th>Buying Price</th>
+                            <th>Payment</th>
                             <th>Modifying Cost</th>
                             <th>Pictures</th>
                             <th class="text-end">Actions</th>
@@ -109,6 +110,10 @@
                                 <td>{{ $purchase->quantity }}</td>
                                 <td>{{ $purchase->purchasing_date?->format('d M Y') }}</td>
                                 <td>{{ number_format((float) $purchase->buying_price_from_owner, 2) }}</td>
+                                <td>
+                                    <span class="badge {{ $purchase->payment_status_badge_class }}">{{ $purchase->payment_status_label }}</span>
+                                    <div class="small text-muted mt-1">{{ $purchase->payment_method_label }}</div>
+                                </td>
                                 <td>{{ number_format((float) ($purchase->modifying_costs_sum ?? 0), 2) }}</td>
                                 <td>{{ $purchase->pictures_count }}</td>
                                 <td class="text-end">
@@ -125,7 +130,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-5">
+                                <td colspan="9" class="text-center py-5">
                                     <div class="text-muted mb-3">
                                         {{ $hasFilters ? 'No purchase records match the current filters.' : 'No purchase records found.' }}
                                     </div>

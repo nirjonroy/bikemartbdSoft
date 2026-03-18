@@ -150,6 +150,8 @@ class PurchaseController extends Controller
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'singleDocumentTypes' => PurchaseDocument::SINGLE_TYPES,
+            'paymentStatusOptions' => Purchase::PAYMENT_STATUSES,
+            'paymentMethodOptions' => Purchase::PAYMENT_METHODS,
             'vehicles' => Vehicle::query()
                 ->with(['brand', 'category', 'latestPurchase', 'latestSell'])
                 ->withSum('purchases as purchased_quantity_total', 'quantity')
@@ -180,6 +182,9 @@ class PurchaseController extends Controller
                 'mobile_number' => ['nullable', 'string', 'max:50'],
                 'quantity' => ['required', 'integer', 'min:1'],
                 'buying_price_from_owner' => ['required', 'numeric', 'min:0'],
+                'payment_status' => ['nullable', 'string', 'in:' . implode(',', array_keys(Purchase::PAYMENT_STATUSES))],
+                'payment_method' => ['nullable', 'string', 'in:' . implode(',', array_keys(Purchase::PAYMENT_METHODS))],
+                'payment_information' => ['nullable', 'string', 'max:2000'],
                 'purchasing_date' => ['required', 'date'],
                 'extra_additional_note' => ['nullable', 'string', 'max:2000'],
                 'pictures' => ['nullable', 'array'],

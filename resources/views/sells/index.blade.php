@@ -88,6 +88,7 @@
                             <th>Quantity</th>
                             <th>Selling Date</th>
                             <th>Selling Price</th>
+                            <th>Payment</th>
                             <th>Picture</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -108,6 +109,10 @@
                                 <td>{{ $sell->quantity }}</td>
                                 <td>{{ $sell->selling_date?->format('d M Y') }}</td>
                                 <td>{{ number_format((float) $sell->selling_price_to_customer, 2) }}</td>
+                                <td>
+                                    <span class="badge {{ $sell->payment_status_badge_class }}">{{ $sell->payment_status_label }}</span>
+                                    <div class="small text-muted mt-1">{{ $sell->payment_method_label }}</div>
+                                </td>
                                 <td>{{ $sell->pictures_count ? 'Uploaded' : 'No' }}</td>
                                 <td class="text-end">
                                     <div class="btn-group">
@@ -123,7 +128,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                <td colspan="8" class="text-center py-5">
                                     <div class="text-muted mb-3">
                                         {{ $hasFilters ? 'No sale records match the current filters.' : 'No sale records found.' }}
                                     </div>

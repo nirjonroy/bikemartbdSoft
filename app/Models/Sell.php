@@ -8,6 +8,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Sell extends Model
 {
+    public const PAYMENT_STATUSES = [
+        'paid' => 'Paid',
+        'partial' => 'Partial',
+        'unpaid' => 'Unpaid',
+    ];
+
+    public const PAYMENT_METHODS = [
+        'cash' => 'Cash',
+        'bank_transfer' => 'Bank Transfer',
+        'mobile_banking' => 'Mobile Banking',
+        'card' => 'Card',
+        'cheque' => 'Cheque',
+        'other' => 'Other',
+    ];
+
     protected $fillable = [
         'vehicle_id',
         'name',
@@ -16,6 +31,9 @@ class Sell extends Model
         'mobile_number',
         'quantity',
         'selling_price_to_customer',
+        'payment_status',
+        'payment_method',
+        'payment_information',
         'selling_date',
         'extra_additional_note',
     ];
@@ -26,6 +44,27 @@ class Sell extends Model
         'selling_price_to_customer' => 'decimal:2',
         'selling_date' => 'date',
     ];
+
+    public function getPaymentStatusLabelAttribute(): string
+    {
+        return self::PAYMENT_STATUSES[$this->payment_status]
+            ?? 'Not Set';
+    }
+
+    public function getPaymentMethodLabelAttribute(): string
+    {
+        return self::PAYMENT_METHODS[$this->payment_method]
+            ?? 'Not Set';
+    }
+
+    public function getPaymentStatusBadgeClassAttribute(): string
+    {
+        return match ($this->payment_status) {
+            'paid' => 'text-bg-success',
+            'partial' => 'text-bg-warning',
+            default => 'text-bg-danger',
+        };
+    }
 
     public function vehicle(): BelongsTo
     {

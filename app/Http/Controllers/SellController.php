@@ -148,6 +148,8 @@ class SellController extends Controller
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'documentTypes' => SellDocument::FILE_TYPES,
+            'paymentStatusOptions' => Sell::PAYMENT_STATUSES,
+            'paymentMethodOptions' => Sell::PAYMENT_METHODS,
             'vehicles' => $this->availableVehiclesForSale($sell),
         ], $overrides);
     }
@@ -162,6 +164,9 @@ class SellController extends Controller
             'mobile_number' => ['nullable', 'string', 'max:50'],
             'quantity' => ['required', 'integer', 'min:1'],
             'selling_price_to_customer' => ['required', 'numeric', 'min:0'],
+            'payment_status' => ['nullable', 'string', 'in:' . implode(',', array_keys(Sell::PAYMENT_STATUSES))],
+            'payment_method' => ['nullable', 'string', 'in:' . implode(',', array_keys(Sell::PAYMENT_METHODS))],
+            'payment_information' => ['nullable', 'string', 'max:2000'],
             'selling_date' => ['required', 'date'],
             'extra_additional_note' => ['nullable', 'string', 'max:2000'],
             'picture' => ['nullable', 'image', 'max:5120'],

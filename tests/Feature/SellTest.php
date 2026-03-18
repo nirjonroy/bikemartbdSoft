@@ -41,6 +41,9 @@ class SellTest extends TestCase
             'mobile_number' => '01711111111',
             'quantity' => '2',
             'selling_price_to_customer' => '175000.00',
+            'payment_status' => 'paid',
+            'payment_method' => 'cash',
+            'payment_information' => 'Paid in full at showroom counter',
             'selling_date' => '2026-03-16',
             'extra_additional_note' => 'Customer collected documents.',
             'picture' => UploadedFile::fake()->image('customer-bike.jpg'),
@@ -61,6 +64,8 @@ class SellTest extends TestCase
             'name' => 'Customer One',
             'mobile_number' => '01711111111',
             'quantity' => 2,
+            'payment_status' => 'paid',
+            'payment_method' => 'cash',
         ]);
 
         $this->assertDatabaseCount('sell_documents', 7);
@@ -126,6 +131,9 @@ class SellTest extends TestCase
             'mobile_number' => '01911111111',
             'quantity' => 2,
             'selling_price_to_customer' => '115000',
+            'payment_status' => 'partial',
+            'payment_method' => 'card',
+            'payment_information' => 'Card payment pending final settlement',
             'selling_date' => '2026-03-17',
             'extra_additional_note' => 'Updated note',
             'remove_documents' => ['picture', 'insurance'],
@@ -139,6 +147,8 @@ class SellTest extends TestCase
         $this->assertSame('New Customer', $sell->name);
         $this->assertSame($updatedVehicle->id, $sell->vehicle_id);
         $this->assertSame(2, $sell->quantity);
+        $this->assertSame('partial', $sell->payment_status);
+        $this->assertSame('card', $sell->payment_method);
         $this->assertDatabaseMissing('sell_documents', ['id' => $picture->id]);
         $this->assertDatabaseMissing('sell_documents', ['id' => $insurance->id]);
         $this->assertDatabaseHas('sell_documents', ['sell_id' => $sell->id, 'type' => 'registration_copy']);
