@@ -15,6 +15,12 @@ class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
@@ -32,7 +38,8 @@ class PurchaseController extends Controller
         $dateTo = $filters['date_to'] ?? null;
 
         $purchases = Purchase::query()
-            ->with(['vehicle.brand', 'vehicle.category'])
+            ->where('location_id', $activeLocation->id)
+            ->with(['vehicle.brand', 'vehicle.category', 'location'])
             ->withCount(['pictureDocuments as pictures_count'])
             ->withSum('modifyingCosts as modifying_costs_sum', 'cost')
             ->when($search !== '', function ($query) use ($search) {
@@ -80,6 +87,10 @@ class PurchaseController extends Controller
 
     public function create()
     {
+        if (! $this->getActiveLocation()) {
+            return $this->missingLocationResponse();
+        }
+
         return view('purchases.create', $this->formViewData([
             'purchase' => new Purchase(),
         ]));
@@ -87,7 +98,14 @@ class PurchaseController extends Controller
 
     public function store(Request $request)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
         [$purchaseData, $modifyingCosts] = $this->validatedPurchaseData($request);
+        $purchaseData['location_id'] = $activeLocation->id;
 
         $purchase = Purchase::create($purchaseData);
 
@@ -101,7 +119,9 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load(['vehicle.brand', 'vehicle.category', 'documents', 'modifyingCosts']);
+        $this->abortIfRecordNotInActiveLocation($purchase->location_id);
+
+        $purchase->load(['vehicle.brand', 'vehicle.category', 'location', 'documents', 'modifyingCosts']);
 
         return view('purchases.show', $this->formViewData([
             'purchase' => $purchase,
@@ -110,7 +130,9 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load(['vehicle.brand', 'vehicle.category', 'documents', 'modifyingCosts']);
+        $this->abortIfRecordNotInActiveLocation($purchase->location_id);
+
+        $purchase->load(['vehicle.brand', 'vehicle.category', 'location', 'documents', 'modifyingCosts']);
 
         return view('purchases.edit', $this->formViewData([
             'purchase' => $purchase,
@@ -119,9 +141,17 @@ class PurchaseController extends Controller
 
     public function update(Request $request, Purchase $purchase)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
+        $this->abortIfRecordNotInActiveLocation($purchase->location_id);
         $purchase->load('documents');
 
         [$purchaseData, $modifyingCosts] = $this->validatedPurchaseData($request);
+        $purchaseData['location_id'] = $activeLocation->id;
 
         $purchase->update($purchaseData);
 
@@ -135,6 +165,7 @@ class PurchaseController extends Controller
 
     public function destroy(Purchase $purchase)
     {
+        $this->abortIfRecordNotInActiveLocation($purchase->location_id);
         $purchase->load('documents');
 
         $this->deleteDocuments($purchase->documents);
@@ -147,17 +178,20 @@ class PurchaseController extends Controller
 
     private function formViewData(array $overrides = []): array
     {
+        $activeLocation = $this->getActiveLocation();
+
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'singleDocumentTypes' => PurchaseDocument::SINGLE_TYPES,
             'paymentStatusOptions' => Purchase::PAYMENT_STATUSES,
             'paymentMethodOptions' => Purchase::PAYMENT_METHODS,
-            'vehicles' => Vehicle::query()
-                ->with(['brand', 'category', 'latestPurchase', 'latestSell'])
-                ->withSum('purchases as purchased_quantity_total', 'quantity')
-                ->withSum('sells as sold_quantity_total', 'quantity')
-                ->orderBy('name')
-                ->get(),
+            'vehicles' => $activeLocation
+                ? Vehicle::query()
+                    ->with(['brand', 'category'])
+                    ->withStockForLocation($activeLocation->id)
+                    ->orderBy('name')
+                    ->get()
+                : collect(),
         ], $overrides);
     }
 

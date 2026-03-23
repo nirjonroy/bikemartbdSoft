@@ -57,6 +57,17 @@ class Vehicle extends Model
         return $this->hasOne(Sell::class)->latestOfMany('selling_date');
     }
 
+    public function scopeWithStockForLocation($query, int $locationId)
+    {
+        return $query
+            ->withSum([
+                'purchases as purchased_quantity_total' => fn ($purchaseQuery) => $purchaseQuery->where('location_id', $locationId),
+            ], 'quantity')
+            ->withSum([
+                'sells as sold_quantity_total' => fn ($sellQuery) => $sellQuery->where('location_id', $locationId),
+            ], 'quantity');
+    }
+
     public function getDisplayNameAttribute(): string
     {
         return $this->code

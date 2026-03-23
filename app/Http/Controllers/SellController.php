@@ -15,6 +15,12 @@ class SellController extends Controller
 {
     public function index(Request $request)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'vehicle_id' => ['nullable', 'integer', 'exists:vehicles,id'],
@@ -32,7 +38,8 @@ class SellController extends Controller
         $dateTo = $filters['date_to'] ?? null;
 
         $sells = Sell::query()
-            ->with(['vehicle.brand', 'vehicle.category'])
+            ->where('location_id', $activeLocation->id)
+            ->with(['vehicle.brand', 'vehicle.category', 'location'])
             ->withCount(['pictureDocuments as pictures_count'])
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($sellQuery) use ($search) {
@@ -79,6 +86,10 @@ class SellController extends Controller
 
     public function create()
     {
+        if (! $this->getActiveLocation()) {
+            return $this->missingLocationResponse();
+        }
+
         return view('sells.create', $this->formViewData([
             'sell' => new Sell(),
         ]));
@@ -86,7 +97,14 @@ class SellController extends Controller
 
     public function store(Request $request)
     {
-        $sellData = $this->validatedSellData($request);
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
+        $sellData = $this->validatedSellData($request, $activeLocation->id);
+        $sellData['location_id'] = $activeLocation->id;
 
         $sell = Sell::create($sellData);
 
@@ -99,7 +117,9 @@ class SellController extends Controller
 
     public function show(Sell $sell)
     {
-        $sell->load(['vehicle.brand', 'vehicle.category', 'documents']);
+        $this->abortIfRecordNotInActiveLocation($sell->location_id);
+
+        $sell->load(['vehicle.brand', 'vehicle.category', 'location', 'documents']);
 
         return view('sells.show', $this->formViewData([
             'sell' => $sell,
@@ -108,7 +128,9 @@ class SellController extends Controller
 
     public function edit(Sell $sell)
     {
-        $sell->load(['vehicle.brand', 'vehicle.category', 'documents']);
+        $this->abortIfRecordNotInActiveLocation($sell->location_id);
+
+        $sell->load(['vehicle.brand', 'vehicle.category', 'location', 'documents']);
 
         return view('sells.edit', $this->formViewData([
             'sell' => $sell,
@@ -117,9 +139,19 @@ class SellController extends Controller
 
     public function update(Request $request, Sell $sell)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
+        $this->abortIfRecordNotInActiveLocation($sell->location_id);
         $sell->load('documents');
 
-        $sell->update($this->validatedSellData($request, $sell));
+        $sellData = $this->validatedSellData($request, $activeLocation->id, $sell);
+        $sellData['location_id'] = $activeLocation->id;
+
+        $sell->update($sellData);
 
         $this->syncDocuments($request, $sell);
 
@@ -130,6 +162,7 @@ class SellController extends Controller
 
     public function destroy(Sell $sell)
     {
+        $this->abortIfRecordNotInActiveLocation($sell->location_id);
         $sell->load('documents');
 
         $this->deleteDocuments($sell->documents);
@@ -144,17 +177,20 @@ class SellController extends Controller
     {
         /** @var \App\Models\Sell|null $sell */
         $sell = $overrides['sell'] ?? null;
+        $activeLocation = $this->getActiveLocation();
 
         return array_merge([
             'businessSetting' => $this->getBusinessSetting(),
             'documentTypes' => SellDocument::FILE_TYPES,
             'paymentStatusOptions' => Sell::PAYMENT_STATUSES,
             'paymentMethodOptions' => Sell::PAYMENT_METHODS,
-            'vehicles' => $this->availableVehiclesForSale($sell),
+            'vehicles' => $activeLocation
+                ? $this->availableVehiclesForSale($sell, $activeLocation->id)
+                : collect(),
         ], $overrides);
     }
 
-    private function validatedSellData(Request $request, ?Sell $sell = null): array
+    private function validatedSellData(Request $request, int $locationId, ?Sell $sell = null): array
     {
         $validator = Validator::make($request->all(), [
             'vehicle_id' => ['required', 'exists:vehicles,id'],
@@ -180,7 +216,7 @@ class SellController extends Controller
             'remove_documents.*' => ['string', 'in:' . implode(',', array_keys(SellDocument::FILE_TYPES))],
         ]);
 
-        $validator->after(function ($validator) use ($request, $sell) {
+        $validator->after(function ($validator) use ($request, $sell, $locationId) {
             $vehicleId = (int) $request->input('vehicle_id');
             $requestedQuantity = (int) $request->input('quantity');
 
@@ -189,9 +225,7 @@ class SellController extends Controller
             }
 
             $vehicle = Vehicle::query()
-                ->with(['latestPurchase', 'latestSell'])
-                ->withSum('purchases as purchased_quantity_total', 'quantity')
-                ->withSum('sells as sold_quantity_total', 'quantity')
+                ->withStockForLocation($locationId)
                 ->find($vehicleId);
 
             if (! $vehicle) {
@@ -221,13 +255,20 @@ class SellController extends Controller
             ->all();
     }
 
-    private function availableVehiclesForSale(?Sell $sell = null)
+    private function availableVehiclesForSale(?Sell $sell = null, ?int $locationId = null)
     {
-        return Vehicle::query()
-            ->with(['brand', 'category', 'latestPurchase', 'latestSell'])
-            ->withSum('purchases as purchased_quantity_total', 'quantity')
-            ->withSum('sells as sold_quantity_total', 'quantity')
+        $query = Vehicle::query()
+            ->with(['brand', 'category'])
             ->orderBy('name')
+            ->when(
+                $locationId,
+                fn ($vehicleQuery) => $vehicleQuery->withStockForLocation($locationId),
+                fn ($vehicleQuery) => $vehicleQuery
+                    ->withSum('purchases as purchased_quantity_total', 'quantity')
+                    ->withSum('sells as sold_quantity_total', 'quantity')
+            );
+
+        return $query
             ->get()
             ->filter(function (Vehicle $vehicle) use ($sell) {
                 if ($sell && (int) $sell->vehicle_id === (int) $vehicle->id) {

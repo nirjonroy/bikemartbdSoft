@@ -17,6 +17,12 @@ class StockManagementController extends Controller
 
     public function index(Request $request)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(self::VALID_STATUSES)],
@@ -26,15 +32,22 @@ class StockManagementController extends Controller
         $status = $filters['status'] ?? null;
 
         $summaryVehicles = Vehicle::query()
-            ->with(['latestPurchase.modifyingCosts', 'latestSell'])
-            ->withSum('purchases as purchased_quantity_total', 'quantity')
-            ->withSum('sells as sold_quantity_total', 'quantity')
+            ->withStockForLocation($activeLocation->id)
             ->get();
 
         $filteredVehicles = Vehicle::query()
-            ->with(['brand', 'category', 'latestPurchase.modifyingCosts', 'latestSell'])
-            ->withSum('purchases as purchased_quantity_total', 'quantity')
-            ->withSum('sells as sold_quantity_total', 'quantity')
+            ->with([
+                'brand',
+                'category',
+                'purchases' => fn ($query) => $query
+                    ->where('location_id', $activeLocation->id)
+                    ->with('modifyingCosts')
+                    ->latest('purchasing_date'),
+                'sells' => fn ($query) => $query
+                    ->where('location_id', $activeLocation->id)
+                    ->latest('selling_date'),
+            ])
+            ->withStockForLocation($activeLocation->id)
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($vehicleQuery) use ($search) {
                     $vehicleQuery
@@ -53,6 +66,11 @@ class StockManagementController extends Controller
             ->when($status, fn ($vehicles) => $vehicles->where('stock_status', $status))
             ->values();
 
+        $filteredVehicles->each(function (Vehicle $vehicle) {
+            $vehicle->setRelation('latestPurchase', $vehicle->purchases->first());
+            $vehicle->setRelation('latestSell', $vehicle->sells->first());
+        });
+
         $perPage = 12;
         $currentPage = LengthAwarePaginator::resolveCurrentPage();
 
@@ -69,6 +87,7 @@ class StockManagementController extends Controller
 
         return view('stock.index', [
             'businessSetting' => $this->getBusinessSetting(),
+            'activeLocation' => $activeLocation,
             'vehicles' => $vehicles,
             'search' => $search,
             'status' => $status,

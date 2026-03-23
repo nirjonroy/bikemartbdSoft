@@ -4,6 +4,7 @@ use App\Http\Controllers\BusinessSettingController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PermissionManagementController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ProfileController;
@@ -39,6 +40,8 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserManagementController::class)->except('show')->middleware('permission:manage users');
     Route::resource('roles', RoleManagementController::class)->except('show')->middleware('permission:manage roles');
     Route::resource('permissions', PermissionManagementController::class)->except('show')->middleware('permission:manage permissions');
+    Route::resource('locations', LocationController::class)->except('show')->middleware('permission:manage locations');
+    Route::post('/active-location', [LocationController::class, 'switch'])->name('locations.switch');
     Route::resource('brands', BrandController::class)->except('show')->middleware('permission:manage brands');
     Route::resource('categories', CategoryController::class)->except('show')->middleware('permission:manage categories');
     Route::resource('vehicles', VehicleController::class)->middleware('permission:manage vehicles');

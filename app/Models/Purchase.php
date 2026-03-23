@@ -24,6 +24,7 @@ class Purchase extends Model
     ];
 
     protected $fillable = [
+        'location_id',
         'vehicle_id',
         'name',
         'father_name',
@@ -39,11 +40,21 @@ class Purchase extends Model
     ];
 
     protected $casts = [
+        'location_id' => 'integer',
         'vehicle_id' => 'integer',
         'quantity' => 'integer',
         'buying_price_from_owner' => 'decimal:2',
         'purchasing_date' => 'date',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (Purchase $purchase) {
+            if (! $purchase->location_id) {
+                $purchase->location_id = Location::query()->value('id');
+            }
+        });
+    }
 
     public function getPaymentStatusLabelAttribute(): string
     {
@@ -69,6 +80,11 @@ class Purchase extends Model
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);
+    }
+
+    public function location(): BelongsTo
+    {
+        return $this->belongsTo(Location::class);
     }
 
     public function documents(): HasMany

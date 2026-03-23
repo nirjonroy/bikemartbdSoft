@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Location;
 use App\Models\Purchase;
 use App\Models\Sell;
 use App\Models\SellDocument;
@@ -300,6 +301,60 @@ class SellTest extends TestCase
         $response->assertSee('Matched Customer');
         $response->assertDontSee('Old Customer');
         $response->assertDontSee('Hidden Customer');
+    }
+
+    public function test_sale_index_only_shows_records_from_the_active_location()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle();
+        $otherLocation = Location::create([
+            'name' => 'Rajshahi Branch',
+            'code' => 'RAJ',
+            'email' => 'rajshahi@bikemartbd.com',
+            'phone' => '01700-987654',
+            'address' => 'Rajshahi',
+            'is_active' => true,
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Main Owner',
+            'quantity' => 3,
+            'buying_price_from_owner' => '120000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        Purchase::create([
+            'location_id' => $otherLocation->id,
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Other Owner',
+            'quantity' => 3,
+            'buying_price_from_owner' => '118000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        Sell::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Main Branch Customer',
+            'quantity' => 1,
+            'selling_price_to_customer' => '150000',
+            'selling_date' => '2026-03-18',
+        ]);
+
+        Sell::create([
+            'location_id' => $otherLocation->id,
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Other Branch Customer',
+            'quantity' => 1,
+            'selling_price_to_customer' => '149000',
+            'selling_date' => '2026-03-18',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('sells.index'));
+
+        $response->assertOk();
+        $response->assertSee('Main Branch Customer');
+        $response->assertDontSee('Other Branch Customer');
     }
 
     private function createVehicle(array $overrides = []): Vehicle

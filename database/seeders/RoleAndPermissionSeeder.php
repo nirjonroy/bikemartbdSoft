@@ -18,6 +18,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage users',
             'manage roles',
             'manage permissions',
+            'manage locations',
             'manage brands',
             'manage categories',
             'manage vehicles',
@@ -35,6 +36,7 @@ class RoleAndPermissionSeeder extends Seeder
             'super-admin' => $permissions,
             'manager' => [
                 'view dashboard',
+                'manage locations',
                 'manage brands',
                 'manage categories',
                 'manage vehicles',

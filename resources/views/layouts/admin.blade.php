@@ -90,6 +90,28 @@
                     </ul>
 
                     <ul class="navbar-nav ms-auto align-items-center">
+                        @if (auth()->check() && $accessibleLocations->isNotEmpty())
+                            <li class="nav-item me-3">
+                                <form method="POST" action="{{ route('locations.switch') }}" class="d-flex align-items-center gap-2">
+                                    @csrf
+                                    <label for="active_location_id" class="small text-muted mb-0 d-none d-md-inline">Location</label>
+                                    <select
+                                        id="active_location_id"
+                                        name="location_id"
+                                        class="form-select form-select-sm"
+                                        onchange="this.form.submit()"
+                                        style="min-width: 220px;"
+                                    >
+                                        @foreach ($accessibleLocations as $locationOption)
+                                            <option value="{{ $locationOption->id }}" @selected($activeLocation && $activeLocation->id === $locationOption->id)>
+                                                {{ $locationOption->display_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </li>
+                        @endif
+
                         <li class="nav-item dropdown user-menu">
                             <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                                 <img
@@ -154,6 +176,14 @@
                                     <a href="{{ route('brands.index') }}" class="nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
                                         <i class="nav-icon bi bi-bookmark-star"></i>
                                         <p>Brands</p>
+                                    </a>
+                                </li>
+                            @endcan
+                            @can('manage locations')
+                                <li class="nav-item">
+                                    <a href="{{ route('locations.index') }}" class="nav-link {{ request()->routeIs('locations.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-geo-alt"></i>
+                                        <p>Locations</p>
                                     </a>
                                 </li>
                             @endcan

@@ -2,7 +2,10 @@
 
 namespace App\Providers;
 
+use App\Support\LocationManager;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\View;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +26,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        View::composer('*', function ($view) {
+            if (! Auth::check()) {
+                $view->with('activeLocation', null);
+                $view->with('accessibleLocations', collect());
+
+                return;
+            }
+
+            $locationManager = app(LocationManager::class);
+
+            $view->with('activeLocation', $locationManager->activeLocation());
+            $view->with('accessibleLocations', $locationManager->accessibleLocations());
+        });
     }
 }

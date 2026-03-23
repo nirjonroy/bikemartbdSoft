@@ -1,3 +1,8 @@
+@php
+    $selectedLocationIds = collect($selectedLocationIds ?? [])->map(fn ($id) => (string) $id)->all();
+    $selectedDefaultLocationId = (string) ($selectedDefaultLocationId ?? '');
+@endphp
+
 <div class="card card-outline card-primary">
     <div class="card-header">
         <h3 class="card-title">User Information</h3>
@@ -34,6 +39,37 @@
             <div class="col-md-6">
                 <label for="password_confirmation" class="form-label">Confirm Password</label>
                 <input type="password" id="password_confirmation" name="password_confirmation" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label for="location_ids" class="form-label">Assigned Locations</label>
+                <select
+                    id="location_ids"
+                    name="location_ids[]"
+                    class="form-select @error('location_ids') is-invalid @enderror @error('location_ids.*') is-invalid @enderror"
+                    multiple
+                    size="{{ min(max($locations->count(), 3), 6) }}"
+                    required
+                >
+                    @foreach ($locations as $location)
+                        <option value="{{ $location->id }}" @selected(in_array((string) $location->id, $selectedLocationIds, true))>
+                            {{ $location->display_name }}
+                        </option>
+                    @endforeach
+                </select>
+                <div class="form-text">Hold Ctrl or Cmd to select multiple locations.</div>
+            </div>
+
+            <div class="col-md-6">
+                <label for="default_location_id" class="form-label">Default Location</label>
+                <select id="default_location_id" name="default_location_id" class="form-select @error('default_location_id') is-invalid @enderror" required>
+                    <option value="">Select default location</option>
+                    @foreach ($locations as $location)
+                        <option value="{{ $location->id }}" @selected($selectedDefaultLocationId === (string) $location->id)>
+                            {{ $location->display_name }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
         </div>
     </div>

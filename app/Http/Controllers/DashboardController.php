@@ -13,6 +13,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $activeLocation = $this->getActiveLocation();
+
+        if (! $activeLocation) {
+            return $this->missingLocationResponse();
+        }
+
         $businessSetting = $this->getBusinessSetting();
 
         $trackedFields = [
@@ -35,13 +41,20 @@ class DashboardController extends Controller
 
         return view('dashboard', [
             'businessSetting' => $businessSetting,
-            'staffCount' => User::count(),
+            'activeLocation' => $activeLocation,
+            'staffCount' => User::query()
+                ->where(function ($query) use ($activeLocation) {
+                    $query
+                        ->whereHas('locations', fn ($locationQuery) => $locationQuery->where('locations.id', $activeLocation->id))
+                        ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'super-admin'));
+                })
+                ->count(),
             'profileCompletion' => $profileCompletion,
             'brandCount' => Brand::count(),
             'categoryCount' => Category::count(),
             'vehicleCount' => Vehicle::count(),
-            'purchaseCount' => Purchase::count(),
-            'saleCount' => Sell::count(),
+            'purchaseCount' => Purchase::query()->where('location_id', $activeLocation->id)->count(),
+            'saleCount' => Sell::query()->where('location_id', $activeLocation->id)->count(),
         ]);
     }
 }

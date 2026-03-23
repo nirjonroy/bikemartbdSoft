@@ -11,6 +11,8 @@ class VehicleController extends Controller
 {
     public function index(Request $request)
     {
+        $activeLocation = $this->getActiveLocation();
+
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'brand_id' => ['nullable', 'integer', 'exists:brands,id'],
@@ -20,12 +22,19 @@ class VehicleController extends Controller
         $search = trim((string) ($filters['search'] ?? ''));
         $brandId = (int) ($filters['brand_id'] ?? 0);
         $categoryId = (int) ($filters['category_id'] ?? 0);
+        $vehicleQuery = Vehicle::query()
+            ->with(['brand', 'category'])
+            ->when($activeLocation, function ($query) use ($activeLocation) {
+                $query->withCount([
+                    'purchases as purchases_count' => fn ($purchaseQuery) => $purchaseQuery->where('location_id', $activeLocation->id),
+                    'sells as sells_count' => fn ($sellQuery) => $sellQuery->where('location_id', $activeLocation->id),
+                ]);
+            }, fn ($query) => $query->withCount(['purchases', 'sells']));
 
         return view('vehicles.index', [
             'businessSetting' => $this->getBusinessSetting(),
-            'vehicles' => Vehicle::query()
-                ->with(['brand', 'category'])
-                ->withCount(['purchases', 'sells'])
+            'activeLocation' => $activeLocation,
+            'vehicles' => $vehicleQuery
                 ->when($search !== '', function ($query) use ($search) {
                     $query->where(function ($vehicleQuery) use ($search) {
                         $vehicleQuery
@@ -72,15 +81,31 @@ class VehicleController extends Controller
 
     public function show(Vehicle $vehicle)
     {
+        $activeLocation = $this->getActiveLocation();
+
+        $vehicle = Vehicle::query()
+            ->with(['brand', 'category'])
+            ->when($activeLocation, fn ($query) => $query->withStockForLocation($activeLocation->id))
+            ->findOrFail($vehicle->id);
+
         $vehicle->load([
-            'brand',
-            'category',
-            'purchases' => fn ($query) => $query->with('vehicle')->latest('purchasing_date'),
-            'sells' => fn ($query) => $query->with('vehicle')->latest('selling_date'),
+            'purchases' => function ($query) use ($activeLocation) {
+                $query
+                    ->with(['vehicle', 'location'])
+                    ->when($activeLocation, fn ($purchaseQuery) => $purchaseQuery->where('location_id', $activeLocation->id))
+                    ->latest('purchasing_date');
+            },
+            'sells' => function ($query) use ($activeLocation) {
+                $query
+                    ->with(['vehicle', 'location'])
+                    ->when($activeLocation, fn ($sellQuery) => $sellQuery->where('location_id', $activeLocation->id))
+                    ->latest('selling_date');
+            },
         ]);
 
         return view('vehicles.show', [
             'businessSetting' => $this->getBusinessSetting(),
+            'activeLocation' => $activeLocation,
             'vehicle' => $vehicle,
         ]);
     }

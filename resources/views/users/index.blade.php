@@ -23,6 +23,8 @@
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Default Location</th>
+                            <th>Assigned Locations</th>
                             <th>Joined</th>
                             <th class="text-end">Actions</th>
                         </tr>
@@ -42,6 +44,14 @@
                                         <span class="badge text-bg-secondary">No role</span>
                                     @endforelse
                                 </td>
+                                <td>{{ $user->defaultLocation?->display_name ?: 'Not set' }}</td>
+                                <td>
+                                    @forelse ($user->locations as $location)
+                                        <span class="badge text-bg-light border">{{ $location->display_name }}</span>
+                                    @empty
+                                        <span class="badge text-bg-secondary">No location</span>
+                                    @endforelse
+                                </td>
                                 <td>{{ $user->created_at?->format('d M Y') }}</td>
                                 <td class="text-end">
                                     <div class="btn-group">
@@ -56,7 +66,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="7" class="text-center py-5">
                                     <div class="text-muted mb-3">No users found.</div>
                                     <a href="{{ route('users.create') }}" class="btn btn-primary">Create the first user</a>
                                 </td>

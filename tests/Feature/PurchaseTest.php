@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Location;
 use App\Models\Purchase;
 use App\Models\PurchaseDocument;
 use App\Models\Vehicle;
@@ -253,6 +254,43 @@ class PurchaseTest extends TestCase
         $response->assertSee('Matched Owner');
         $response->assertDontSee('Old Owner');
         $response->assertDontSee('Hidden Owner');
+    }
+
+    public function test_purchase_index_only_shows_records_from_the_active_location()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle();
+        $otherLocation = Location::create([
+            'name' => 'Sylhet Branch',
+            'code' => 'SYL',
+            'email' => 'sylhet@bikemartbd.com',
+            'phone' => '01700-654321',
+            'address' => 'Sylhet',
+            'is_active' => true,
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Main Branch Owner',
+            'quantity' => 2,
+            'buying_price_from_owner' => '100000',
+            'purchasing_date' => '2026-03-18',
+        ]);
+
+        Purchase::create([
+            'location_id' => $otherLocation->id,
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Other Branch Owner',
+            'quantity' => 1,
+            'buying_price_from_owner' => '98000',
+            'purchasing_date' => '2026-03-18',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('purchases.index'));
+
+        $response->assertOk();
+        $response->assertSee('Main Branch Owner');
+        $response->assertDontSee('Other Branch Owner');
     }
 
     private function createVehicle(array $overrides = []): Vehicle
