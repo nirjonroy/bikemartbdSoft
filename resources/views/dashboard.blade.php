@@ -151,10 +151,12 @@
                             Add Vehicle
                         </a>
                         @can('manage stock')
-                            <a href="{{ route('stock.index') }}" class="btn btn-outline-dark">
-                                <i class="bi bi-box-seam me-1"></i>
-                                Stock Management
-                            </a>
+                            @if ($businessSetting->show_stock_management_module ?? true)
+                                <a href="{{ route('stock.index') }}" class="btn btn-outline-dark">
+                                    <i class="bi bi-box-seam me-1"></i>
+                                    Stock Management
+                                </a>
+                            @endif
                         @endcan
                         <a href="{{ route('purchases.create') }}" class="btn btn-outline-primary">
                             <i class="bi bi-bag-check me-1"></i>

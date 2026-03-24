@@ -17,6 +17,10 @@ class StockManagementController extends Controller
 
     public function index(Request $request)
     {
+        if (! $this->showStockManagementModule()) {
+            return $this->hiddenStockModuleResponse();
+        }
+
         $activeLocation = $this->getActiveLocation();
         $selectedLocationIds = $this->getSelectedLocationIds();
 

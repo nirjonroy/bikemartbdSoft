@@ -41,6 +41,9 @@ class BusinessSettingTest extends TestCase
                 'currency_code' => 'BDT',
                 'timezone' => 'Asia/Dhaka',
                 'invoice_footer' => 'Thank you for shopping with BikeMart.',
+                'show_stock_information' => '0',
+                'show_quantity_fields' => '0',
+                'show_stock_management_module' => '0',
                 'logo' => UploadedFile::fake()->image('logo.png'),
             ]
         );
@@ -54,6 +57,9 @@ class BusinessSettingTest extends TestCase
             'phone' => '+8801700000000',
             'currency_code' => 'BDT',
             'timezone' => 'Asia/Dhaka',
+            'show_stock_information' => false,
+            'show_quantity_fields' => false,
+            'show_stock_management_module' => false,
         ]);
 
         $businessSetting = BusinessSetting::first();

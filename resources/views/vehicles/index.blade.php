@@ -68,8 +68,10 @@
                             <th>Brand</th>
                             <th>Category</th>
                             <th>Registration</th>
-                            <th>Purchases</th>
-                            <th>Sales</th>
+                            @if ($businessSetting->show_stock_information ?? true)
+                                <th>Purchases</th>
+                                <th>Sales</th>
+                            @endif
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -88,8 +90,10 @@
                                 <td>{{ $vehicle->brand->name }}</td>
                                 <td>{{ $vehicle->category->name }}</td>
                                 <td>{{ $vehicle->registration_number ?: 'Not added' }}</td>
-                                <td>{{ $vehicle->purchases_count }}</td>
-                                <td>{{ $vehicle->sells_count }}</td>
+                                @if ($businessSetting->show_stock_information ?? true)
+                                    <td>{{ $vehicle->purchases_count }}</td>
+                                    <td>{{ $vehicle->sells_count }}</td>
+                                @endif
                                 <td class="text-end">
                                     <div class="btn-group">
                                         <a href="{{ route('vehicles.show', $vehicle) }}" class="btn btn-sm btn-outline-primary">View</a>
@@ -104,7 +108,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="7" class="text-center py-5">
+                                        <td colspan="{{ ($businessSetting->show_stock_information ?? true) ? '7' : '5' }}" class="text-center py-5">
                                     <div class="text-muted mb-3">
                                         {{ $hasFilters ? 'No vehicles match the current filters.' : 'No vehicles found.' }}
                                     </div>

@@ -572,10 +572,12 @@
                                                 <div class="line-label">Chassis Number</div>
                                                 <div class="line-value">{{ $sell->vehicle?->chassis_number ?: 'N/A' }}</div>
                                             </div>
-                                            <div class="line-row">
-                                                <div class="line-label">Quantity</div>
-                                                <div class="line-value">{{ $sell->quantity }}</div>
-                                            </div>
+                                            @if ($businessSetting->show_quantity_fields ?? true)
+                                                <div class="line-row">
+                                                    <div class="line-label">Quantity</div>
+                                                    <div class="line-value">{{ $sell->quantity }}</div>
+                                                </div>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Location;
 use App\Models\Purchase;
@@ -461,6 +462,46 @@ class SellTest extends TestCase
         $bothResponse->assertSee('sheet is-double', false);
         $bothResponse->assertSee('Customer Copy');
         $bothResponse->assertSee('Office Copy');
+    }
+
+    public function test_sale_pages_hide_quantity_when_quantity_setting_is_disabled()
+    {
+        BusinessSetting::create([
+            'business_name' => 'BikeMart POS',
+            'show_quantity_fields' => false,
+        ]);
+
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle([
+            'name' => 'Hidden Field Sale Bike',
+            'code' => 'QTY-HIDE-SALE',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Owner One',
+            'quantity' => 3,
+            'buying_price_from_owner' => '125000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        $sell = Sell::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Customer Without Qty Label',
+            'quantity' => 1,
+            'selling_price_to_customer' => '145000',
+            'selling_date' => '2026-03-16',
+        ]);
+
+        $indexResponse = $this->actingAs($user)->get(route('sells.index'));
+
+        $indexResponse->assertOk();
+        $this->assertStringNotContainsString('<th>Quantity</th>', $indexResponse->getContent());
+
+        $showResponse = $this->actingAs($user)->get(route('sells.show', $sell));
+
+        $showResponse->assertOk();
+        $showResponse->assertDontSeeText('Quantity');
     }
 
     private function createVehicle(array $overrides = []): Vehicle

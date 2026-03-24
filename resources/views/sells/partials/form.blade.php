@@ -5,6 +5,8 @@
     $selectedVehicle = $vehicles->firstWhere('id', (int) $selectedVehicleId);
     $selectedPaymentStatus = old('payment_status', $sell->payment_status ?: 'unpaid');
     $selectedPaymentMethod = old('payment_method', $sell->payment_method);
+    $showStockInformation = $businessSetting->show_stock_information ?? true;
+    $showQuantityFields = $businessSetting->show_quantity_fields ?? true;
     $selectedQuantity = (int) old('quantity', $sell->quantity ?? 1);
     $selectedSellingPrice = old('selling_price_to_customer', $sell->selling_price_to_customer);
     $selectedLatestPurchase = $selectedVehicle?->latestPurchase;
@@ -65,7 +67,7 @@
             </div>
         @else
             <div class="alert alert-info">
-                Sale entries reduce stock by the quantity you enter here. Quantity cannot exceed the available stock.
+                {{ $showStockInformation ? ($showQuantityFields ? 'Sale entries reduce stock by the quantity you enter here. Quantity cannot exceed the available stock.' : 'Sale entries update stock automatically and still respect the available stock.') : ($showQuantityFields ? 'Enter the sale quantity for the selected vehicle.' : 'Record the sale for the selected vehicle.') }}
             </div>
         @endif
 
@@ -91,14 +93,16 @@
                             Registration: {{ $selectedVehicle->registration_number ?: 'Not added' }} |
                             Engine: {{ $selectedVehicle->engine_number ?: 'Not added' }}
                         </div>
-                        <div class="small text-muted mt-2">
-                            Purchased: {{ $selectedVehicle->purchased_quantity }} |
-                            Sold: {{ $selectedVehicle->sold_quantity }} |
-                            Available: {{ $selectedVehicle->available_stock_quantity }}
-                        </div>
-                        <div class="small mt-2">
-                            <span class="badge {{ $selectedVehicle->stock_badge_class }}">{{ $selectedVehicle->stock_status }}</span>
-                        </div>
+                        @if ($showStockInformation)
+                            <div class="small text-muted mt-2">
+                                Purchased: {{ $selectedVehicle->purchased_quantity }} |
+                                Sold: {{ $selectedVehicle->sold_quantity }} |
+                                Available: {{ $selectedVehicle->available_stock_quantity }}
+                            </div>
+                            <div class="small mt-2">
+                                <span class="badge {{ $selectedVehicle->stock_badge_class }}">{{ $selectedVehicle->stock_status }}</span>
+                            </div>
+                        @endif
                         @if ($selectedLatestPurchase)
                             <div class="small text-muted mt-3">Latest purchase: {{ $selectedLatestPurchase->purchasing_date?->format('d M Y') }}</div>
                             <div class="small text-muted mt-1">
@@ -133,19 +137,23 @@
                 <input type="text" id="mobile_number" name="mobile_number" class="form-control @error('mobile_number') is-invalid @enderror" value="{{ old('mobile_number', $sell->mobile_number) }}">
             </div>
 
-            <div class="col-md-2">
-                <label for="quantity" class="form-label">Quantity</label>
-                <input
-                    type="number"
-                    min="1"
-                    step="1"
-                    id="quantity"
-                    name="quantity"
-                    class="form-control @error('quantity') is-invalid @enderror"
-                    value="{{ old('quantity', $sell->quantity ?? 1) }}"
-                    required
-                >
-            </div>
+            @if ($showQuantityFields)
+                <div class="col-md-2">
+                    <label for="quantity" class="form-label">Quantity</label>
+                    <input
+                        type="number"
+                        min="1"
+                        step="1"
+                        id="quantity"
+                        name="quantity"
+                        class="form-control @error('quantity') is-invalid @enderror"
+                        value="{{ old('quantity', $sell->quantity ?? 1) }}"
+                        required
+                    >
+                </div>
+            @else
+                <input type="hidden" id="quantity" name="quantity" value="{{ old('quantity', $sell->quantity ?? 1) }}">
+            @endif
 
             <div class="col-md-3">
                 <label for="selling_date" class="form-label">Selling Date</label>
@@ -326,6 +334,7 @@
             const profitPreview = document.getElementById('sale-profit-preview');
             const vehicles = @json($vehiclePricingData);
             const vehicleMap = new Map(vehicles.map((vehicle) => [String(vehicle.id), vehicle]));
+            const showStockInformation = @json($showStockInformation);
             const moneyFormatter = new Intl.NumberFormat('en-BD', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
@@ -376,14 +385,16 @@
                         Registration: ${escapeHtml(vehicle.registration_number)} |
                         Engine: ${escapeHtml(vehicle.engine_number)}
                     </div>
-                    <div class="small text-muted mt-2">
-                        Purchased: ${escapeHtml(String(vehicle.purchased_quantity))} |
-                        Sold: ${escapeHtml(String(vehicle.sold_quantity))} |
-                        Available: ${escapeHtml(String(vehicle.available_stock_quantity))}
-                    </div>
-                    <div class="small mt-2">
-                        <span class="badge ${vehicle.stock_badge_class}">${escapeHtml(vehicle.stock_status)}</span>
-                    </div>
+                    ${showStockInformation ? `
+                        <div class="small text-muted mt-2">
+                            Purchased: ${escapeHtml(String(vehicle.purchased_quantity))} |
+                            Sold: ${escapeHtml(String(vehicle.sold_quantity))} |
+                            Available: ${escapeHtml(String(vehicle.available_stock_quantity))}
+                        </div>
+                        <div class="small mt-2">
+                            <span class="badge ${vehicle.stock_badge_class}">${escapeHtml(vehicle.stock_status)}</span>
+                        </div>
+                    ` : ''}
                     ${purchaseInfo}
                 `;
             };

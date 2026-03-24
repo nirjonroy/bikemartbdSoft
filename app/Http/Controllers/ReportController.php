@@ -337,6 +337,10 @@ class ReportController extends Controller
 
     public function stock()
     {
+        if (! $this->showStockManagementModule()) {
+            return $this->hiddenStockModuleResponse();
+        }
+
         $activeLocation = $this->getActiveLocation();
         $selectedLocationIds = $this->getSelectedLocationIds();
 

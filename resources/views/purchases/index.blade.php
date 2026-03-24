@@ -85,7 +85,9 @@
                         <tr>
                             <th>Vehicle</th>
                             <th>Name</th>
-                            <th>Quantity</th>
+                            @if ($businessSetting->show_quantity_fields ?? true)
+                                <th>Quantity</th>
+                            @endif
                             <th>Purchase Date</th>
                             <th>Buying Price</th>
                             <th>Payment</th>
@@ -107,7 +109,9 @@
                                     <div class="fw-semibold">{{ $purchase->name }}</div>
                                     <div class="small text-muted">{{ $purchase->mobile_number ?: 'Mobile not added' }}</div>
                                 </td>
-                                <td>{{ $purchase->quantity }}</td>
+                                @if ($businessSetting->show_quantity_fields ?? true)
+                                    <td>{{ $purchase->quantity }}</td>
+                                @endif
                                 <td>{{ $purchase->purchasing_date?->format('d M Y') }}</td>
                                 <td>{{ number_format((float) $purchase->buying_price_from_owner, 2) }}</td>
                                 <td>
@@ -130,7 +134,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-5">
+                                <td colspan="{{ ($businessSetting->show_quantity_fields ?? true) ? '9' : '8' }}" class="text-center py-5">
                                     <div class="text-muted mb-3">
                                         {{ $hasFilters ? 'No purchase records match the current filters.' : 'No purchase records found.' }}
                                     </div>

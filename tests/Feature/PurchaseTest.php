@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Location;
 use App\Models\Purchase;
@@ -307,6 +308,38 @@ class PurchaseTest extends TestCase
         $response->assertOk();
         $response->assertSee('Main Branch Owner');
         $response->assertDontSee('Other Branch Owner');
+    }
+
+    public function test_purchase_pages_hide_quantity_when_quantity_setting_is_disabled()
+    {
+        BusinessSetting::create([
+            'business_name' => 'BikeMart POS',
+            'show_quantity_fields' => false,
+        ]);
+
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle([
+            'name' => 'Hidden Field Bike',
+            'code' => 'QTY-HIDE-001',
+        ]);
+
+        $purchase = Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Owner Without Qty Label',
+            'quantity' => 3,
+            'buying_price_from_owner' => '115000',
+            'purchasing_date' => '2026-03-17',
+        ]);
+
+        $indexResponse = $this->actingAs($user)->get(route('purchases.index'));
+
+        $indexResponse->assertOk();
+        $this->assertStringNotContainsString('<th>Quantity</th>', $indexResponse->getContent());
+
+        $showResponse = $this->actingAs($user)->get(route('purchases.show', $purchase));
+
+        $showResponse->assertOk();
+        $showResponse->assertDontSeeText('Quantity');
     }
 
     private function createVehicle(array $overrides = []): Vehicle

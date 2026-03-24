@@ -219,12 +219,14 @@
                                 </li>
                             @endcan
                             @can('manage stock')
+                                @if ($businessSetting->show_stock_management_module ?? true)
                                 <li class="nav-item">
                                     <a href="{{ route('stock.index') }}" class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}">
                                         <i class="nav-icon bi bi-box-seam"></i>
                                         <p>Stock Management</p>
                                     </a>
                                 </li>
+                                @endif
                             @endcan
                             @can('manage purchases')
                                 <li class="nav-item">
@@ -270,12 +272,14 @@
                                                 <p>Supplier &amp; Customer Report</p>
                                             </a>
                                         </li>
-                                        <li class="nav-item">
-                                            <a href="{{ route('reports.stock') }}" class="nav-link {{ request()->routeIs('reports.stock') ? 'active' : '' }}">
-                                                <i class="nav-icon bi bi-arrow-right-short"></i>
-                                                <p>Stock Report</p>
-                                            </a>
-                                        </li>
+                                        @if ($businessSetting->show_stock_management_module ?? true)
+                                            <li class="nav-item">
+                                                <a href="{{ route('reports.stock') }}" class="nav-link {{ request()->routeIs('reports.stock') ? 'active' : '' }}">
+                                                    <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                    <p>Stock Report</p>
+                                                </a>
+                                            </li>
+                                        @endif
                                         <li class="nav-item">
                                             <a href="{{ route('reports.trending-products') }}" class="nav-link {{ request()->routeIs('reports.trending-products') ? 'active' : '' }}">
                                                 <i class="nav-icon bi bi-arrow-right-short"></i>

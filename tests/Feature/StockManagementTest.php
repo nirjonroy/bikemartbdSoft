@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
+use App\Models\BusinessSetting;
 use App\Models\Category;
 use App\Models\Purchase;
 use App\Models\Sell;
@@ -136,5 +137,20 @@ class StockManagementTest extends TestCase
         $this->actingAs($user)
             ->get(route('stock.index'))
             ->assertForbidden();
+    }
+
+    public function test_stock_management_redirects_when_hidden_in_business_settings()
+    {
+        $user = $this->createUserWithRole('manager');
+
+        BusinessSetting::create([
+            'business_name' => 'BikeMart POS',
+            'show_stock_management_module' => false,
+        ]);
+
+        $response = $this->actingAs($user)->get(route('stock.index'));
+
+        $response->assertRedirect(route('dashboard'));
+        $response->assertSessionHasErrors('stock');
     }
 }

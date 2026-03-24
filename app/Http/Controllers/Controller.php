@@ -22,7 +22,32 @@ class Controller extends BaseController
             'email' => 'admin@bikemartbd.com',
             'currency_code' => 'BDT',
             'timezone' => config('app.timezone', 'UTC'),
+            'show_stock_information' => true,
+            'show_quantity_fields' => true,
+            'show_stock_management_module' => true,
         ]);
+    }
+
+    protected function showStockInformation(): bool
+    {
+        return (bool) $this->getBusinessSetting()->show_stock_information;
+    }
+
+    protected function showQuantityFields(): bool
+    {
+        return (bool) $this->getBusinessSetting()->show_quantity_fields;
+    }
+
+    protected function showStockManagementModule(): bool
+    {
+        return (bool) $this->getBusinessSetting()->show_stock_management_module;
+    }
+
+    protected function hiddenStockModuleResponse()
+    {
+        return redirect()
+            ->route('dashboard')
+            ->withErrors(['stock' => 'Stock management is currently hidden from business settings.']);
     }
 
     protected function getLocationManager(): LocationManager

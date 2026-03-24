@@ -27,6 +27,9 @@ class BusinessSettingController extends Controller
             'currency_code' => ['nullable', 'string', 'max:10'],
             'timezone' => ['nullable', 'timezone'],
             'invoice_footer' => ['nullable', 'string', 'max:500'],
+            'show_stock_information' => ['nullable', 'boolean'],
+            'show_quantity_fields' => ['nullable', 'boolean'],
+            'show_stock_management_module' => ['nullable', 'boolean'],
             'logo' => ['nullable', 'image', 'max:2048'],
             'remove_logo' => ['nullable', 'boolean'],
         ]);
@@ -45,6 +48,9 @@ class BusinessSettingController extends Controller
         }
 
         unset($validated['logo'], $validated['remove_logo']);
+        $validated['show_stock_information'] = $request->boolean('show_stock_information');
+        $validated['show_quantity_fields'] = $request->boolean('show_quantity_fields');
+        $validated['show_stock_management_module'] = $request->boolean('show_stock_management_module');
 
         $businessSetting->update($validated);
 

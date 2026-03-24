@@ -18,6 +18,21 @@ class BusinessSetting extends Model
         'timezone',
         'invoice_footer',
         'logo_path',
+        'show_stock_information',
+        'show_quantity_fields',
+        'show_stock_management_module',
+    ];
+
+    protected $attributes = [
+        'show_stock_information' => true,
+        'show_quantity_fields' => true,
+        'show_stock_management_module' => true,
+    ];
+
+    protected $casts = [
+        'show_stock_information' => 'boolean',
+        'show_quantity_fields' => 'boolean',
+        'show_stock_management_module' => 'boolean',
     ];
 
     public function getDisplayNameAttribute(): string

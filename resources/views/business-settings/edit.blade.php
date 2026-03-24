@@ -152,6 +152,65 @@
                                 >{{ old('invoice_footer', $businessSetting->invoice_footer) }}</textarea>
                             </div>
 
+                            <div class="col-12">
+                                <div class="border rounded p-3 bg-light">
+                                    <h5 class="mb-3">Display Options</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="show_stock_information"
+                                                    name="show_stock_information"
+                                                    value="1"
+                                                    @checked(old('show_stock_information', $businessSetting->show_stock_information))
+                                                >
+                                                <label class="form-check-label" for="show_stock_information">
+                                                    Show stock information
+                                                </label>
+                                            </div>
+                                            <div class="form-text">Controls stock badges, purchased/sold/available figures, and stock details on forms.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="show_quantity_fields"
+                                                    name="show_quantity_fields"
+                                                    value="1"
+                                                    @checked(old('show_quantity_fields', $businessSetting->show_quantity_fields))
+                                                >
+                                                <label class="form-check-label" for="show_quantity_fields">
+                                                    Show quantity fields
+                                                </label>
+                                            </div>
+                                            <div class="form-text">Hides quantity inputs and quantity columns while keeping the saved quantity intact behind the scenes.</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check form-switch">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    role="switch"
+                                                    id="show_stock_management_module"
+                                                    name="show_stock_management_module"
+                                                    value="1"
+                                                    @checked(old('show_stock_management_module', $businessSetting->show_stock_management_module))
+                                                >
+                                                <label class="form-check-label" for="show_stock_management_module">
+                                                    Show stock module
+                                                </label>
+                                            </div>
+                                            <div class="form-text">Controls Stock Management access, the sidebar menu item, and the stock report link.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="col-md-8">
                                 <label for="logo" class="form-label">Business Logo</label>
                                 <input
@@ -182,7 +241,7 @@
                     </div>
 
                     <div class="card-footer d-flex justify-content-between align-items-center">
-                        <span class="text-muted small">Changes apply immediately to the dashboard branding.</span>
+                        <span class="text-muted small">Changes apply immediately to branding, stock visibility, and quantity visibility.</span>
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-floppy me-1"></i>
                             Save Business Information
