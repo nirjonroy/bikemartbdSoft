@@ -14,8 +14,9 @@ class DashboardController extends Controller
     public function index()
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -43,9 +44,9 @@ class DashboardController extends Controller
             'businessSetting' => $businessSetting,
             'activeLocation' => $activeLocation,
             'staffCount' => User::query()
-                ->where(function ($query) use ($activeLocation) {
+                ->where(function ($query) use ($selectedLocationIds) {
                     $query
-                        ->whereHas('locations', fn ($locationQuery) => $locationQuery->where('locations.id', $activeLocation->id))
+                        ->whereHas('locations', fn ($locationQuery) => $locationQuery->whereIn('locations.id', $selectedLocationIds->all()))
                         ->orWhereHas('roles', fn ($roleQuery) => $roleQuery->where('name', 'super-admin'));
                 })
                 ->count(),
@@ -53,8 +54,8 @@ class DashboardController extends Controller
             'brandCount' => Brand::count(),
             'categoryCount' => Category::count(),
             'vehicleCount' => Vehicle::count(),
-            'purchaseCount' => Purchase::query()->where('location_id', $activeLocation->id)->count(),
-            'saleCount' => Sell::query()->where('location_id', $activeLocation->id)->count(),
+            'purchaseCount' => Purchase::query()->whereIn('location_id', $selectedLocationIds->all())->count(),
+            'saleCount' => Sell::query()->whereIn('location_id', $selectedLocationIds->all())->count(),
         ]);
     }
 }

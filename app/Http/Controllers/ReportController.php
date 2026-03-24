@@ -18,22 +18,23 @@ class ReportController extends Controller
     public function profitLoss(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $purchases = $this->purchaseQuery($activeLocation->id, $filters)
+        $purchases = $this->purchaseQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category', 'modifyingCosts'])
             ->get();
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category'])
             ->get();
 
-        $averageCostByVehicle = $this->averageUnitCostByVehicle($activeLocation->id, $filters['date_to'] ?? null);
+        $averageCostByVehicle = $this->averageUnitCostByVehicle($selectedLocationIds->all(), $filters['date_to'] ?? null);
         $estimatedCostOfSales = (float) $sells->sum(function (Sell $sell) use ($averageCostByVehicle) {
             return $sell->quantity * (float) ($averageCostByVehicle[$sell->vehicle_id] ?? 0);
         });
@@ -104,18 +105,19 @@ class ReportController extends Controller
     public function purchaseSale(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $purchases = $this->purchaseQuery($activeLocation->id, $filters)
+        $purchases = $this->purchaseQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category', 'modifyingCosts'])
             ->get();
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category'])
             ->get();
 
@@ -240,18 +242,19 @@ class ReportController extends Controller
     public function supplierCustomer(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $purchases = $this->purchaseQuery($activeLocation->id, $filters)
+        $purchases = $this->purchaseQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle', 'modifyingCosts'])
             ->get();
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with('vehicle')
             ->get();
 
@@ -335,8 +338,9 @@ class ReportController extends Controller
     public function stock()
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -345,14 +349,14 @@ class ReportController extends Controller
                 'brand',
                 'category',
                 'purchases' => fn ($query) => $query
-                    ->where('location_id', $activeLocation->id)
+                    ->whereIn('location_id', $selectedLocationIds->all())
                     ->with('modifyingCosts')
                     ->latest('purchasing_date'),
                 'sells' => fn ($query) => $query
-                    ->where('location_id', $activeLocation->id)
+                    ->whereIn('location_id', $selectedLocationIds->all())
                     ->latest('selling_date'),
             ])
-            ->withStockForLocation($activeLocation->id)
+            ->withStockForLocation($selectedLocationIds->all())
             ->orderBy('name')
             ->get()
             ->map(function (Vehicle $vehicle) {
@@ -413,14 +417,15 @@ class ReportController extends Controller
     public function trendingProducts(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category'])
             ->get();
 
@@ -482,8 +487,9 @@ class ReportController extends Controller
     public function items()
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -498,7 +504,7 @@ class ReportController extends Controller
                     ->where('location_id', $activeLocation->id)
                     ->latest('selling_date'),
             ])
-            ->withStockForLocation($activeLocation->id)
+            ->withStockForLocation($selectedLocationIds->all())
             ->orderBy('name')
             ->get()
             ->map(function (Vehicle $vehicle) {
@@ -558,14 +564,15 @@ class ReportController extends Controller
     public function productPurchase(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $purchases = $this->purchaseQuery($activeLocation->id, $filters)
+        $purchases = $this->purchaseQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category', 'modifyingCosts'])
             ->get();
 
@@ -626,14 +633,15 @@ class ReportController extends Controller
     public function productSell(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category'])
             ->get();
 
@@ -694,14 +702,15 @@ class ReportController extends Controller
     public function purchasePayment(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $purchases = $this->purchaseQuery($activeLocation->id, $filters)
+        $purchases = $this->purchaseQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category', 'modifyingCosts'])
             ->get();
 
@@ -760,14 +769,15 @@ class ReportController extends Controller
     public function sellPayment(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
         $filters = $this->validatedDateFilters($request);
 
-        $sells = $this->sellQuery($activeLocation->id, $filters)
+        $sells = $this->sellQuery($selectedLocationIds->all(), $filters)
             ->with(['vehicle.brand', 'vehicle.category', 'location'])
             ->get();
 
@@ -828,8 +838,9 @@ class ReportController extends Controller
     public function expense(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -837,8 +848,8 @@ class ReportController extends Controller
 
         $expenses = PurchaseModifyingCost::query()
             ->with(['purchase.vehicle.brand', 'purchase.vehicle.category'])
-            ->whereHas('purchase', function (Builder $query) use ($activeLocation, $filters) {
-                $query->where('location_id', $activeLocation->id);
+            ->whereHas('purchase', function (Builder $query) use ($selectedLocationIds, $filters) {
+                $query->whereIn('location_id', $selectedLocationIds->all());
                 $this->applyDateRange($query, 'purchasing_date', $filters['date_from'] ?? null, $filters['date_to'] ?? null);
             })
             ->get()
@@ -914,8 +925,9 @@ class ReportController extends Controller
     public function activityLog(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -924,7 +936,7 @@ class ReportController extends Controller
 
         $activities = collect()
             ->merge(
-                $this->purchaseQuery($activeLocation->id, $filters, 'updated_at')
+                $this->purchaseQuery($selectedLocationIds->all(), $filters, 'updated_at')
                     ->with('vehicle')
                     ->get()
                     ->map(fn (Purchase $purchase) => $this->activityRow(
@@ -936,7 +948,7 @@ class ReportController extends Controller
                     ))
             )
             ->merge(
-                $this->sellQuery($activeLocation->id, $filters, 'updated_at')
+                $this->sellQuery($selectedLocationIds->all(), $filters, 'updated_at')
                     ->with('vehicle', 'location')
                     ->get()
                     ->map(fn (Sell $sell) => $this->activityRow(
@@ -1085,17 +1097,17 @@ class ReportController extends Controller
         ]);
     }
 
-    private function purchaseQuery(int $locationId, array $filters, string $dateColumn = 'purchasing_date'): Builder
+    private function purchaseQuery(int|array $locationIds, array $filters, string $dateColumn = 'purchasing_date'): Builder
     {
-        $query = Purchase::query()->where('location_id', $locationId);
+        $query = Purchase::query()->whereIn('location_id', collect($locationIds)->map(fn ($id) => (int) $id)->filter()->all());
         $this->applyDateRange($query, $dateColumn, $filters['date_from'] ?? null, $filters['date_to'] ?? null);
 
         return $query;
     }
 
-    private function sellQuery(int $locationId, array $filters, string $dateColumn = 'selling_date'): Builder
+    private function sellQuery(int|array $locationIds, array $filters, string $dateColumn = 'selling_date'): Builder
     {
-        $query = Sell::query()->where('location_id', $locationId);
+        $query = Sell::query()->whereIn('location_id', collect($locationIds)->map(fn ($id) => (int) $id)->filter()->all());
         $this->applyDateRange($query, $dateColumn, $filters['date_from'] ?? null, $filters['date_to'] ?? null);
 
         return $query;
@@ -1138,10 +1150,10 @@ class ReportController extends Controller
         ]);
     }
 
-    private function averageUnitCostByVehicle(int $locationId, ?string $dateTo = null): Collection
+    private function averageUnitCostByVehicle(int|array $locationIds, ?string $dateTo = null): Collection
     {
         $query = Purchase::query()
-            ->where('location_id', $locationId)
+            ->whereIn('location_id', collect($locationIds)->map(fn ($id) => (int) $id)->filter()->all())
             ->with('modifyingCosts');
 
         if ($dateTo) {
@@ -1238,3 +1250,5 @@ class ReportController extends Controller
         return (float) preg_replace('/[^0-9.-]/', '', $moneyValue);
     }
 }
+
+

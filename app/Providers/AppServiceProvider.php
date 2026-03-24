@@ -4,8 +4,8 @@ namespace App\Providers;
 
 use App\Support\LocationManager;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -30,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
             if (! Auth::check()) {
                 $view->with('activeLocation', null);
                 $view->with('accessibleLocations', collect());
+                $view->with('allLocationsMode', false);
+                $view->with('locationScopeLabel', 'No location selected');
 
                 return;
             }
@@ -38,6 +40,8 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('activeLocation', $locationManager->activeLocation());
             $view->with('accessibleLocations', $locationManager->accessibleLocations());
+            $view->with('allLocationsMode', $locationManager->isAllLocationsMode());
+            $view->with('locationScopeLabel', $locationManager->selectionLabel());
         });
     }
 }

@@ -16,8 +16,9 @@ class SellController extends Controller
     public function index(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -38,7 +39,7 @@ class SellController extends Controller
         $dateTo = $filters['date_to'] ?? null;
 
         $sells = Sell::query()
-            ->where('location_id', $activeLocation->id)
+            ->whereIn('location_id', $selectedLocationIds->all())
             ->with(['vehicle.brand', 'vehicle.category', 'location'])
             ->withCount(['pictureDocuments as pictures_count'])
             ->when($search !== '', function ($query) use ($search) {

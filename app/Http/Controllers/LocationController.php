@@ -88,14 +88,18 @@ class LocationController extends Controller
     public function switch(Request $request)
     {
         $validated = $request->validate([
-            'location_id' => ['required', 'integer', Rule::exists('locations', 'id')],
+            'location_id' => ['required', 'string'],
         ]);
 
-        abort_unless($this->setActiveLocation((int) $validated['location_id']), 403);
+        $locationSelection = $validated['location_id'] === \App\Support\LocationManager::ALL_LOCATIONS
+            ? $validated['location_id']
+            : (int) $validated['location_id'];
+
+        abort_unless($this->setActiveLocation($locationSelection), 403);
 
         return redirect()
             ->route('dashboard')
-            ->with('status', 'Working location updated successfully.');
+            ->with('status', 'Working location scope updated successfully.');
     }
 
     private function validatedData(Request $request, ?Location $location = null): array

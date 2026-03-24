@@ -102,8 +102,13 @@
                                         onchange="this.form.submit()"
                                         style="min-width: 220px;"
                                     >
+                                        @if ($accessibleLocations->count() > 1)
+                                            <option value="{{ \App\Support\LocationManager::ALL_LOCATIONS }}" @selected($allLocationsMode)>
+                                                All Branches
+                                            </option>
+                                        @endif
                                         @foreach ($accessibleLocations as $locationOption)
-                                            <option value="{{ $locationOption->id }}" @selected($activeLocation && $activeLocation->id === $locationOption->id)>
+                                            <option value="{{ $locationOption->id }}" @selected(! $allLocationsMode && $activeLocation && $activeLocation->id === $locationOption->id)>
                                                 {{ $locationOption->display_name }}
                                             </option>
                                         @endforeach

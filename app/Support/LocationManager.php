@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Session;
 
 class LocationManager
 {
+    public const ALL_LOCATIONS = 'all';
+
     private ?Collection $accessibleLocationsCache = null;
 
     private ?Location $activeLocationCache = null;
@@ -47,6 +49,10 @@ class LocationManager
             return null;
         }
 
+        if ($this->isAllLocationsMode($user)) {
+            return null;
+        }
+
         if ($this->cachedUserId === $user->id && $this->activeLocationCache !== null) {
             return $this->activeLocationCache;
         }
@@ -73,12 +79,70 @@ class LocationManager
         return $activeLocation;
     }
 
-    public function setActiveLocation(int $locationId, ?User $user = null): bool
+    public function isAllLocationsMode(?User $user = null): bool
     {
         $user ??= Auth::user();
 
         if (! $user) {
             return false;
+        }
+
+        return Session::get('active_location_id') === self::ALL_LOCATIONS
+            && $this->accessibleLocations($user)->isNotEmpty();
+    }
+
+    public function selectedLocationIds(?User $user = null): Collection
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return collect();
+        }
+
+        $locations = $this->accessibleLocations($user);
+
+        if ($locations->isEmpty()) {
+            return collect();
+        }
+
+        if ($this->isAllLocationsMode($user)) {
+            return $locations->pluck('id')->values();
+        }
+
+        $activeLocation = $this->activeLocation($user);
+
+        return $activeLocation
+            ? collect([$activeLocation->id])
+            : collect();
+    }
+
+    public function selectionLabel(?User $user = null): string
+    {
+        if ($this->isAllLocationsMode($user)) {
+            return 'All Branches';
+        }
+
+        return $this->activeLocation($user)?->display_name
+            ?? 'No location selected';
+    }
+
+    public function setActiveLocation(int|string $locationId, ?User $user = null): bool
+    {
+        $user ??= Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($locationId === self::ALL_LOCATIONS) {
+            if ($this->accessibleLocations($user)->count() < 2) {
+                return false;
+            }
+
+            Session::put('active_location_id', self::ALL_LOCATIONS);
+            $this->activeLocationCache = null;
+
+            return true;
         }
 
         $location = $this->accessibleLocations($user)->firstWhere('id', $locationId);

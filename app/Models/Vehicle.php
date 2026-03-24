@@ -57,14 +57,16 @@ class Vehicle extends Model
         return $this->hasOne(Sell::class)->latestOfMany('selling_date');
     }
 
-    public function scopeWithStockForLocation($query, int $locationId)
+    public function scopeWithStockForLocation($query, int|array|\Illuminate\Support\Collection $locationIds)
     {
+        $locationIds = collect($locationIds)->map(fn ($id) => (int) $id)->filter()->values()->all();
+
         return $query
             ->withSum([
-                'purchases as purchased_quantity_total' => fn ($purchaseQuery) => $purchaseQuery->where('location_id', $locationId),
+                'purchases as purchased_quantity_total' => fn ($purchaseQuery) => $purchaseQuery->whereIn('location_id', $locationIds),
             ], 'quantity')
             ->withSum([
-                'sells as sold_quantity_total' => fn ($sellQuery) => $sellQuery->where('location_id', $locationId),
+                'sells as sold_quantity_total' => fn ($sellQuery) => $sellQuery->whereIn('location_id', $locationIds),
             ], 'quantity');
     }
 

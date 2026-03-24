@@ -18,8 +18,9 @@ class StockManagementController extends Controller
     public function index(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
-        if (! $activeLocation) {
+        if ($selectedLocationIds->isEmpty()) {
             return $this->missingLocationResponse();
         }
 
@@ -32,7 +33,7 @@ class StockManagementController extends Controller
         $status = $filters['status'] ?? null;
 
         $summaryVehicles = Vehicle::query()
-            ->withStockForLocation($activeLocation->id)
+            ->withStockForLocation($selectedLocationIds->all())
             ->get();
 
         $filteredVehicles = Vehicle::query()
@@ -40,14 +41,14 @@ class StockManagementController extends Controller
                 'brand',
                 'category',
                 'purchases' => fn ($query) => $query
-                    ->where('location_id', $activeLocation->id)
+                    ->whereIn('location_id', $selectedLocationIds->all())
                     ->with('modifyingCosts')
                     ->latest('purchasing_date'),
                 'sells' => fn ($query) => $query
-                    ->where('location_id', $activeLocation->id)
+                    ->whereIn('location_id', $selectedLocationIds->all())
                     ->latest('selling_date'),
             ])
-            ->withStockForLocation($activeLocation->id)
+            ->withStockForLocation($selectedLocationIds->all())
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($vehicleQuery) use ($search) {
                     $vehicleQuery

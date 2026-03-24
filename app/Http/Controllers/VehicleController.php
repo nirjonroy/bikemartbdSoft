@@ -12,6 +12,7 @@ class VehicleController extends Controller
     public function index(Request $request)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
@@ -24,10 +25,10 @@ class VehicleController extends Controller
         $categoryId = (int) ($filters['category_id'] ?? 0);
         $vehicleQuery = Vehicle::query()
             ->with(['brand', 'category'])
-            ->when($activeLocation, function ($query) use ($activeLocation) {
+            ->when($selectedLocationIds->isNotEmpty(), function ($query) use ($selectedLocationIds) {
                 $query->withCount([
-                    'purchases as purchases_count' => fn ($purchaseQuery) => $purchaseQuery->where('location_id', $activeLocation->id),
-                    'sells as sells_count' => fn ($sellQuery) => $sellQuery->where('location_id', $activeLocation->id),
+                    'purchases as purchases_count' => fn ($purchaseQuery) => $purchaseQuery->whereIn('location_id', $selectedLocationIds->all()),
+                    'sells as sells_count' => fn ($sellQuery) => $sellQuery->whereIn('location_id', $selectedLocationIds->all()),
                 ]);
             }, fn ($query) => $query->withCount(['purchases', 'sells']));
 
@@ -82,23 +83,24 @@ class VehicleController extends Controller
     public function show(Vehicle $vehicle)
     {
         $activeLocation = $this->getActiveLocation();
+        $selectedLocationIds = $this->getSelectedLocationIds();
 
         $vehicle = Vehicle::query()
             ->with(['brand', 'category'])
-            ->when($activeLocation, fn ($query) => $query->withStockForLocation($activeLocation->id))
+            ->when($selectedLocationIds->isNotEmpty(), fn ($query) => $query->withStockForLocation($selectedLocationIds->all()))
             ->findOrFail($vehicle->id);
 
         $vehicle->load([
-            'purchases' => function ($query) use ($activeLocation) {
+            'purchases' => function ($query) use ($selectedLocationIds) {
                 $query
                     ->with(['vehicle', 'location'])
-                    ->when($activeLocation, fn ($purchaseQuery) => $purchaseQuery->where('location_id', $activeLocation->id))
+                    ->when($selectedLocationIds->isNotEmpty(), fn ($purchaseQuery) => $purchaseQuery->whereIn('location_id', $selectedLocationIds->all()))
                     ->latest('purchasing_date');
             },
-            'sells' => function ($query) use ($activeLocation) {
+            'sells' => function ($query) use ($selectedLocationIds) {
                 $query
                     ->with(['vehicle', 'location'])
-                    ->when($activeLocation, fn ($sellQuery) => $sellQuery->where('location_id', $activeLocation->id))
+                    ->when($selectedLocationIds->isNotEmpty(), fn ($sellQuery) => $sellQuery->whereIn('location_id', $selectedLocationIds->all()))
                     ->latest('selling_date');
             },
         ]);

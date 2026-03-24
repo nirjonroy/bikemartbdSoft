@@ -35,18 +35,39 @@ class Controller extends BaseController
         return $this->getLocationManager()->accessibleLocations();
     }
 
+    protected function getSelectedLocationIds(): Collection
+    {
+        return $this->getLocationManager()->selectedLocationIds();
+    }
+
+    protected function getLocationScopeLabel(): string
+    {
+        return $this->getLocationManager()->selectionLabel();
+    }
+
+    protected function isAllLocationsMode(): bool
+    {
+        return $this->getLocationManager()->isAllLocationsMode();
+    }
+
     protected function getActiveLocation(): ?Location
     {
         return $this->getLocationManager()->activeLocation();
     }
 
-    protected function setActiveLocation(int $locationId): bool
+    protected function setActiveLocation(int|string $locationId): bool
     {
         return $this->getLocationManager()->setActiveLocation($locationId);
     }
 
     protected function missingLocationResponse()
     {
+        if ($this->isAllLocationsMode()) {
+            return redirect()
+                ->route('dashboard')
+                ->withErrors(['location' => 'Select a specific branch instead of All Branches before creating or editing branch-specific records.']);
+        }
+
         if (auth()->check() && auth()->user()->can('manage locations')) {
             return redirect()
                 ->route('locations.index')
@@ -58,6 +79,15 @@ class Controller extends BaseController
 
     protected function abortIfRecordNotInActiveLocation(?int $locationId): void
     {
+        if ($this->isAllLocationsMode()) {
+            abort_unless(
+                $locationId && $this->getSelectedLocationIds()->contains($locationId),
+                404
+            );
+
+            return;
+        }
+
         $activeLocation = $this->getActiveLocation();
 
         abort_unless(

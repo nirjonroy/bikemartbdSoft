@@ -12,7 +12,7 @@
     <div class="alert alert-info">
         <div class="fw-semibold">{{ $reportDescription }}</div>
         <div class="small mt-1">
-            Active location: <strong>{{ $activeLocation->display_name }}</strong>
+            Selected scope: <strong>{{ $locationScopeLabel }}</strong>
         </div>
     </div>
 
