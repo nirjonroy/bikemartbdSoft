@@ -5,6 +5,52 @@
     $selectedVehicle = $vehicles->firstWhere('id', (int) $selectedVehicleId);
     $selectedPaymentStatus = old('payment_status', $sell->payment_status ?: 'unpaid');
     $selectedPaymentMethod = old('payment_method', $sell->payment_method);
+    $selectedQuantity = (int) old('quantity', $sell->quantity ?? 1);
+    $selectedSellingPrice = old('selling_price_to_customer', $sell->selling_price_to_customer);
+    $selectedLatestPurchase = $selectedVehicle?->latestPurchase;
+    $selectedLatestPurchaseQuantity = max((int) ($selectedLatestPurchase?->quantity ?? 0), 1);
+    $selectedPurchaseExcludingTotal = $selectedLatestPurchase ? (float) $selectedLatestPurchase->buying_price_from_owner : null;
+    $selectedPurchaseIncludingTotal = $selectedLatestPurchase ? (float) $selectedLatestPurchase->grand_total : null;
+    $selectedPurchaseExcludingUnit = $selectedLatestPurchase ? $selectedPurchaseExcludingTotal / $selectedLatestPurchaseQuantity : null;
+    $selectedPurchaseIncludingUnit = $selectedLatestPurchase ? $selectedPurchaseIncludingTotal / $selectedLatestPurchaseQuantity : null;
+    $selectedCostExcludingForSale = $selectedPurchaseExcludingUnit !== null ? $selectedPurchaseExcludingUnit * max($selectedQuantity, 1) : null;
+    $selectedCostIncludingForSale = $selectedPurchaseIncludingUnit !== null ? $selectedPurchaseIncludingUnit * max($selectedQuantity, 1) : null;
+    $selectedProfitPreviewAvailable = $selectedLatestPurchase && is_numeric($selectedSellingPrice);
+    $selectedProfitExcluding = $selectedProfitPreviewAvailable ? (float) $selectedSellingPrice - $selectedCostExcludingForSale : null;
+    $selectedProfitIncluding = $selectedProfitPreviewAvailable ? (float) $selectedSellingPrice - $selectedCostIncludingForSale : null;
+    $selectedProfitExcludingPercentage = $selectedProfitPreviewAvailable && $selectedCostExcludingForSale > 0
+        ? ($selectedProfitExcluding / $selectedCostExcludingForSale) * 100
+        : null;
+    $selectedProfitIncludingPercentage = $selectedProfitPreviewAvailable && $selectedCostIncludingForSale > 0
+        ? ($selectedProfitIncluding / $selectedCostIncludingForSale) * 100
+        : null;
+    $vehiclePricingData = $vehicles
+        ->map(function ($vehicleOption) {
+            $latestPurchase = $vehicleOption->latestPurchase;
+            $purchaseQuantity = max((int) ($latestPurchase?->quantity ?? 0), 1);
+            $purchaseExcludingTotal = $latestPurchase ? (float) $latestPurchase->buying_price_from_owner : null;
+            $purchaseIncludingTotal = $latestPurchase ? (float) $latestPurchase->grand_total : null;
+
+            return [
+                'id' => (int) $vehicleOption->id,
+                'brand_name' => $vehicleOption->brand->name,
+                'category_name' => $vehicleOption->category->name,
+                'registration_number' => $vehicleOption->registration_number ?: 'Not added',
+                'engine_number' => $vehicleOption->engine_number ?: 'Not added',
+                'purchased_quantity' => (int) $vehicleOption->purchased_quantity,
+                'sold_quantity' => (int) $vehicleOption->sold_quantity,
+                'available_stock_quantity' => (int) $vehicleOption->available_stock_quantity,
+                'stock_status' => $vehicleOption->stock_status,
+                'stock_badge_class' => $vehicleOption->stock_badge_class,
+                'latest_purchase_date' => $latestPurchase?->purchasing_date?->format('d M Y'),
+                'purchase_excluding_total' => $purchaseExcludingTotal,
+                'purchase_including_total' => $purchaseIncludingTotal,
+                'purchase_excluding_unit' => $latestPurchase ? round($purchaseExcludingTotal / $purchaseQuantity, 2) : null,
+                'purchase_including_unit' => $latestPurchase ? round($purchaseIncludingTotal / $purchaseQuantity, 2) : null,
+            ];
+        })
+        ->values()
+        ->all();
 @endphp
 
 <div class="card card-outline card-primary">
@@ -38,7 +84,7 @@
 
             <div class="col-md-6">
                 <label class="form-label">Selected Vehicle Details</label>
-                <div class="border rounded p-3 h-100 bg-light">
+                <div class="border rounded p-3 h-100 bg-light" id="selected-vehicle-details">
                     @if ($selectedVehicle)
                         <div class="fw-semibold">{{ $selectedVehicle->brand->name }} / {{ $selectedVehicle->category->name }}</div>
                         <div class="small text-muted">
@@ -53,6 +99,19 @@
                         <div class="small mt-2">
                             <span class="badge {{ $selectedVehicle->stock_badge_class }}">{{ $selectedVehicle->stock_status }}</span>
                         </div>
+                        @if ($selectedLatestPurchase)
+                            <div class="small text-muted mt-3">Latest purchase: {{ $selectedLatestPurchase->purchasing_date?->format('d M Y') }}</div>
+                            <div class="small text-muted mt-1">
+                                Excluding modifying cost: BDT {{ number_format($selectedPurchaseExcludingTotal, 2) }} total |
+                                Unit: BDT {{ number_format($selectedPurchaseExcludingUnit, 2) }}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                Including modifying cost: BDT {{ number_format($selectedPurchaseIncludingTotal, 2) }} total |
+                                Unit: BDT {{ number_format($selectedPurchaseIncludingUnit, 2) }}
+                            </div>
+                        @else
+                            <div class="small text-warning mt-3">No purchase cost data found for this branch yet.</div>
+                        @endif
                     @else
                         <div class="text-muted">Select a vehicle to connect this sale record.</div>
                     @endif
@@ -114,6 +173,60 @@
                 >
             </div>
 
+            <div class="col-12">
+                <label class="form-label">Profit Preview</label>
+                <div class="border rounded p-3 bg-light" id="sale-profit-preview">
+                    @if (! $selectedVehicle)
+                        <div class="text-muted">Select a vehicle and enter a selling price to see the expected profit.</div>
+                    @elseif (! $selectedLatestPurchase)
+                        <div class="text-warning">Purchase cost data is not available for the selected vehicle in this branch yet.</div>
+                    @else
+                        <div class="small text-muted mb-3">
+                            Based on latest purchase from {{ $selectedLatestPurchase->purchasing_date?->format('d M Y') }} and current sale quantity of {{ max($selectedQuantity, 1) }} unit(s).
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100 bg-white">
+                                    <div class="text-uppercase small fw-semibold text-muted mb-2">Excluding Modifying Cost</div>
+                                    <div class="small text-muted">Cost basis for current quantity</div>
+                                    <div class="fw-semibold mb-2">BDT {{ number_format($selectedCostExcludingForSale, 2) }}</div>
+                                    @if ($selectedProfitPreviewAvailable)
+                                        <div class="small text-muted">Expected profit</div>
+                                        <div class="fw-semibold {{ $selectedProfitExcluding >= 0 ? 'text-success' : 'text-danger' }}">
+                                            BDT {{ number_format($selectedProfitExcluding, 2) }}
+                                        </div>
+                                        <div class="small {{ $selectedProfitExcluding >= 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ number_format($selectedProfitExcludingPercentage, 2) }}%
+                                        </div>
+                                    @else
+                                        <div class="small text-muted">Enter selling price to calculate profit.</div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="border rounded p-3 h-100 bg-white">
+                                    <div class="text-uppercase small fw-semibold text-muted mb-2">Including Modifying Cost</div>
+                                    <div class="small text-muted">Cost basis for current quantity</div>
+                                    <div class="fw-semibold mb-2">BDT {{ number_format($selectedCostIncludingForSale, 2) }}</div>
+                                    @if ($selectedProfitPreviewAvailable)
+                                        <div class="small text-muted">Expected profit</div>
+                                        <div class="fw-semibold {{ $selectedProfitIncluding >= 0 ? 'text-success' : 'text-danger' }}">
+                                            BDT {{ number_format($selectedProfitIncluding, 2) }}
+                                        </div>
+                                        <div class="small {{ $selectedProfitIncluding >= 0 ? 'text-success' : 'text-danger' }}">
+                                            {{ number_format($selectedProfitIncludingPercentage, 2) }}%
+                                        </div>
+                                    @else
+                                        <div class="small text-muted">Enter selling price to calculate profit.</div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             <div class="col-md-4">
                 <label for="payment_status" class="form-label">Payment Status</label>
                 <select id="payment_status" name="payment_status" class="form-select @error('payment_status') is-invalid @enderror">
@@ -150,7 +263,6 @@
         </div>
     </div>
 </div>
-
 <div class="card card-outline card-success">
     <div class="card-header">
         <h3 class="card-title">Picture and Documents</h3>
@@ -204,3 +316,161 @@
     </div>
 </div>
 
+@push('scripts')
+    <script>
+        (() => {
+            const vehicleSelect = document.getElementById('vehicle_id');
+            const quantityInput = document.getElementById('quantity');
+            const sellingPriceInput = document.getElementById('selling_price_to_customer');
+            const vehicleDetails = document.getElementById('selected-vehicle-details');
+            const profitPreview = document.getElementById('sale-profit-preview');
+            const vehicles = @json($vehiclePricingData);
+            const vehicleMap = new Map(vehicles.map((vehicle) => [String(vehicle.id), vehicle]));
+            const moneyFormatter = new Intl.NumberFormat('en-BD', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+            });
+
+            if (!vehicleSelect || !quantityInput || !sellingPriceInput || !vehicleDetails || !profitPreview) {
+                return;
+            }
+
+            const escapeHtml = (value) => {
+                const div = document.createElement('div');
+                div.textContent = value ?? '';
+                return div.innerHTML;
+            };
+
+            const formatMoney = (value) => `BDT ${moneyFormatter.format(Number(value || 0))}`;
+            const formatPercent = (value) => `${Number(value || 0).toFixed(2)}%`;
+            const currentVehicle = () => vehicleMap.get(String(vehicleSelect.value || '')) || null;
+            const currentQuantity = () => Math.max(parseInt(quantityInput.value || '0', 10) || 0, 0);
+            const currentSellingPrice = () => {
+                const parsed = parseFloat(sellingPriceInput.value || '');
+                return Number.isFinite(parsed) ? parsed : null;
+            };
+            const profitClass = (value) => value > 0 ? 'text-success' : value < 0 ? 'text-danger' : 'text-muted';
+
+            const vehicleDetailsMarkup = (vehicle) => {
+                if (!vehicle) {
+                    return '<div class="text-muted">Select a vehicle to connect this sale record.</div>';
+                }
+
+                const purchaseInfo = vehicle.purchase_including_total !== null
+                    ? `
+                        <div class="small text-muted mt-3">Latest purchase: ${escapeHtml(vehicle.latest_purchase_date || 'Not available')}</div>
+                        <div class="small text-muted mt-1">
+                            Excluding modifying cost: ${escapeHtml(formatMoney(vehicle.purchase_excluding_total))} total |
+                            Unit: ${escapeHtml(formatMoney(vehicle.purchase_excluding_unit))}
+                        </div>
+                        <div class="small text-muted mt-1">
+                            Including modifying cost: ${escapeHtml(formatMoney(vehicle.purchase_including_total))} total |
+                            Unit: ${escapeHtml(formatMoney(vehicle.purchase_including_unit))}
+                        </div>
+                    `
+                    : '<div class="small text-warning mt-3">No purchase cost data found for this branch yet.</div>';
+
+                return `
+                    <div class="fw-semibold">${escapeHtml(vehicle.brand_name)} / ${escapeHtml(vehicle.category_name)}</div>
+                    <div class="small text-muted">
+                        Registration: ${escapeHtml(vehicle.registration_number)} |
+                        Engine: ${escapeHtml(vehicle.engine_number)}
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Purchased: ${escapeHtml(String(vehicle.purchased_quantity))} |
+                        Sold: ${escapeHtml(String(vehicle.sold_quantity))} |
+                        Available: ${escapeHtml(String(vehicle.available_stock_quantity))}
+                    </div>
+                    <div class="small mt-2">
+                        <span class="badge ${vehicle.stock_badge_class}">${escapeHtml(vehicle.stock_status)}</span>
+                    </div>
+                    ${purchaseInfo}
+                `;
+            };
+
+            const profitCardMarkup = (title, costBasis, profitValue, profitPercentage) => `
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100 bg-white">
+                        <div class="text-uppercase small fw-semibold text-muted mb-2">${escapeHtml(title)}</div>
+                        <div class="small text-muted">Cost basis for current quantity</div>
+                        <div class="fw-semibold mb-2">${escapeHtml(formatMoney(costBasis))}</div>
+                        <div class="small text-muted">Expected profit</div>
+                        <div class="fw-semibold ${profitClass(profitValue)}">${escapeHtml(formatMoney(profitValue))}</div>
+                        <div class="small ${profitClass(profitValue)}">${escapeHtml(formatPercent(profitPercentage))}</div>
+                    </div>
+                </div>
+            `;
+
+            const previewWithoutPriceMarkup = (title, costBasis) => `
+                <div class="col-md-6">
+                    <div class="border rounded p-3 h-100 bg-white">
+                        <div class="text-uppercase small fw-semibold text-muted mb-2">${escapeHtml(title)}</div>
+                        <div class="small text-muted">Cost basis for current quantity</div>
+                        <div class="fw-semibold mb-2">${escapeHtml(formatMoney(costBasis))}</div>
+                        <div class="small text-muted">Enter selling price to calculate profit.</div>
+                    </div>
+                </div>
+            `;
+
+            const profitPreviewMarkup = (vehicle) => {
+                if (!vehicle) {
+                    return '<div class="text-muted">Select a vehicle and enter a selling price to see the expected profit.</div>';
+                }
+
+                if (vehicle.purchase_including_total === null) {
+                    return '<div class="text-warning">Purchase cost data is not available for the selected vehicle in this branch yet.</div>';
+                }
+
+                const quantity = currentQuantity();
+
+                if (quantity <= 0) {
+                    return '<div class="text-muted">Enter a valid sale quantity to calculate profit.</div>';
+                }
+
+                const excludingCost = Number(vehicle.purchase_excluding_unit) * quantity;
+                const includingCost = Number(vehicle.purchase_including_unit) * quantity;
+                const sellingPrice = currentSellingPrice();
+                const intro = `
+                    <div class="small text-muted mb-3">
+                        Based on latest purchase from ${escapeHtml(vehicle.latest_purchase_date || 'Not available')} and current sale quantity of ${escapeHtml(String(quantity))} unit(s).
+                    </div>
+                `;
+
+                if (sellingPrice === null) {
+                    return `
+                        ${intro}
+                        <div class="row g-3">
+                            ${previewWithoutPriceMarkup('Excluding Modifying Cost', excludingCost)}
+                            ${previewWithoutPriceMarkup('Including Modifying Cost', includingCost)}
+                        </div>
+                    `;
+                }
+
+                const excludingProfit = sellingPrice - excludingCost;
+                const includingProfit = sellingPrice - includingCost;
+                const excludingPercentage = excludingCost > 0 ? (excludingProfit / excludingCost) * 100 : 0;
+                const includingPercentage = includingCost > 0 ? (includingProfit / includingCost) * 100 : 0;
+
+                return `
+                    ${intro}
+                    <div class="row g-3">
+                        ${profitCardMarkup('Excluding Modifying Cost', excludingCost, excludingProfit, excludingPercentage)}
+                        ${profitCardMarkup('Including Modifying Cost', includingCost, includingProfit, includingPercentage)}
+                    </div>
+                `;
+            };
+
+            const renderSaleMetrics = () => {
+                const vehicle = currentVehicle();
+                vehicleDetails.innerHTML = vehicleDetailsMarkup(vehicle);
+                profitPreview.innerHTML = profitPreviewMarkup(vehicle);
+            };
+
+            vehicleSelect.addEventListener('change', renderSaleMetrics);
+            quantityInput.addEventListener('input', renderSaleMetrics);
+            sellingPriceInput.addEventListener('input', renderSaleMetrics);
+
+            renderSaleMetrics();
+        })();
+    </script>
+@endpush

@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Vehicle;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class VehicleController extends Controller
 {
@@ -78,6 +79,17 @@ class VehicleController extends Controller
         return redirect()
             ->route('vehicles.show', $vehicle)
             ->with('status', 'Vehicle created successfully.');
+    }
+
+    public function quickStore(Request $request): JsonResponse
+    {
+        $vehicle = Vehicle::create($this->validatedData($request));
+        $vehicle->load(['brand', 'category']);
+
+        return response()->json([
+            'message' => 'Vehicle created successfully.',
+            'vehicle' => $this->vehiclePayload($vehicle),
+        ], 201);
     }
 
     public function show(Vehicle $vehicle)
@@ -163,5 +175,22 @@ class VehicleController extends Controller
             'year' => ['nullable', 'integer', 'between:1900,2100'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
+    }
+
+    private function vehiclePayload(Vehicle $vehicle): array
+    {
+        return [
+            'id' => (int) $vehicle->id,
+            'label' => $vehicle->display_name . ' | ' . ($vehicle->brand?->name ?: 'No brand') . ' / ' . ($vehicle->category?->name ?: 'No category'),
+            'brand_name' => $vehicle->brand?->name ?: 'No brand',
+            'category_name' => $vehicle->category?->name ?: 'No category',
+            'registration_number' => $vehicle->registration_number ?: 'Not added',
+            'engine_number' => $vehicle->engine_number ?: 'Not added',
+            'purchased_quantity' => 0,
+            'sold_quantity' => 0,
+            'available_stock_quantity' => 0,
+            'stock_status' => 'Not Purchased',
+            'stock_badge_class' => 'text-bg-secondary',
+        ];
     }
 }

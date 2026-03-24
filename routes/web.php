@@ -45,6 +45,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/active-location', [LocationController::class, 'switch'])->name('locations.switch');
     Route::resource('brands', BrandController::class)->except('show')->middleware('permission:manage brands');
     Route::resource('categories', CategoryController::class)->except('show')->middleware('permission:manage categories');
+    Route::post('/vehicles/quick-store', [VehicleController::class, 'quickStore'])
+        ->middleware('permission:manage vehicles')
+        ->name('vehicles.quick-store');
     Route::resource('vehicles', VehicleController::class)->middleware('permission:manage vehicles');
     Route::get('/stock-management', [StockManagementController::class, 'index'])
         ->middleware('permission:manage stock')

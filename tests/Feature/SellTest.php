@@ -238,6 +238,47 @@ class SellTest extends TestCase
         $response->assertDontSee('Awaiting Purchase');
     }
 
+    public function test_sale_form_shows_purchase_costs_and_profit_preview_for_selected_vehicle()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle([
+            'name' => 'Margin Bike',
+            'code' => 'MARGIN-001',
+        ]);
+
+        $purchase = Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Margin Owner',
+            'quantity' => 2,
+            'buying_price_from_owner' => '100000',
+            'purchasing_date' => '2026-03-15',
+        ]);
+
+        $purchase->modifyingCosts()->createMany([
+            ['reason' => 'Registration fee', 'cost' => '2000'],
+            ['reason' => 'Service charge', 'cost' => '1000'],
+        ]);
+
+        $sell = Sell::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Margin Customer',
+            'quantity' => 1,
+            'selling_price_to_customer' => '120000',
+            'selling_date' => '2026-03-16',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('sells.edit', $sell));
+
+        $response->assertOk();
+        $response->assertSee('Profit Preview');
+        $response->assertSee('Excluding modifying cost: BDT 100,000.00 total');
+        $response->assertSee('Including modifying cost: BDT 103,000.00 total');
+        $response->assertSee('BDT 70,000.00');
+        $response->assertSee('BDT 68,500.00');
+        $response->assertSee('140.00%');
+        $response->assertSee('133.01%');
+    }
+
     public function test_sale_index_can_be_filtered()
     {
         $user = $this->createUserWithRole();

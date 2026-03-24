@@ -207,6 +207,22 @@ class PurchaseTest extends TestCase
         $response->assertSee('In Stock Bike');
     }
 
+    public function test_purchase_form_shows_vehicle_search_and_quick_add_controls()
+    {
+        $user = $this->createUserWithRole();
+        $this->createVehicle([
+            'name' => 'Searchable Bike',
+            'code' => 'SEARCH-001',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('purchases.create'));
+
+        $response->assertOk();
+        $response->assertSee('Search by vehicle, code, registration, engine, brand or category');
+        $response->assertSee('Add Vehicle');
+        $response->assertSee('quickVehicleModal', false);
+    }
+
     public function test_purchase_index_can_be_filtered()
     {
         $user = $this->createUserWithRole();

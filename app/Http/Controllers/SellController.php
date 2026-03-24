@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Purchase;
 use App\Models\Sell;
 use App\Models\SellDocument;
 use App\Models\Vehicle;
@@ -298,7 +299,7 @@ class SellController extends Controller
                     ->withSum('sells as sold_quantity_total', 'quantity')
             );
 
-        return $query
+        $vehicles = $query
             ->get()
             ->filter(function (Vehicle $vehicle) use ($sell) {
                 if ($sell && (int) $sell->vehicle_id === (int) $vehicle->id) {
@@ -308,6 +309,24 @@ class SellController extends Controller
                 return $vehicle->isAvailableForSale();
             })
             ->values();
+
+        if ($locationId && $vehicles->isNotEmpty()) {
+            $latestPurchases = Purchase::query()
+                ->with('modifyingCosts')
+                ->where('location_id', $locationId)
+                ->whereIn('vehicle_id', $vehicles->pluck('id'))
+                ->orderByDesc('purchasing_date')
+                ->orderByDesc('id')
+                ->get()
+                ->groupBy('vehicle_id')
+                ->map(fn ($purchaseRows) => $purchaseRows->first());
+
+            $vehicles->each(function (Vehicle $vehicle) use ($latestPurchases) {
+                $vehicle->setRelation('latestPurchase', $latestPurchases->get($vehicle->id));
+            });
+        }
+
+        return $vehicles;
     }
 
     private function syncDocuments(Request $request, Sell $sell): void

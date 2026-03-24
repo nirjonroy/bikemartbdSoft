@@ -12,6 +12,35 @@
     $selectedVehicle = $vehicles->firstWhere('id', (int) $selectedVehicleId);
     $selectedPaymentStatus = old('payment_status', $purchase->payment_status ?: 'unpaid');
     $selectedPaymentMethod = old('payment_method', $purchase->payment_method);
+    $canQuickAddVehicle = auth()->user()?->can('manage vehicles') ?? false;
+    $canCreateVehicleFromModal = $canQuickAddVehicle && $brands->isNotEmpty() && $categories->isNotEmpty();
+    $vehicleOptionsData = $vehicles
+        ->map(fn ($vehicleOption) => [
+            'id' => (int) $vehicleOption->id,
+            'label' => $vehicleOption->display_name . ' | ' . $vehicleOption->brand->name . ' / ' . $vehicleOption->category->name,
+            'search' => strtolower(implode(' ', array_filter([
+                $vehicleOption->name,
+                $vehicleOption->code,
+                $vehicleOption->model,
+                $vehicleOption->registration_number,
+                $vehicleOption->engine_number,
+                $vehicleOption->chassis_number,
+                $vehicleOption->color,
+                $vehicleOption->brand->name,
+                $vehicleOption->category->name,
+            ]))),
+            'brand_name' => $vehicleOption->brand->name,
+            'category_name' => $vehicleOption->category->name,
+            'registration_number' => $vehicleOption->registration_number ?: 'Not added',
+            'engine_number' => $vehicleOption->engine_number ?: 'Not added',
+            'purchased_quantity' => (int) $vehicleOption->purchased_quantity,
+            'sold_quantity' => (int) $vehicleOption->sold_quantity,
+            'available_stock_quantity' => (int) $vehicleOption->available_stock_quantity,
+            'stock_status' => $vehicleOption->stock_status,
+            'stock_badge_class' => $vehicleOption->stock_badge_class,
+        ])
+        ->values()
+        ->all();
 
     if (empty($costRows)) {
         $costRows = [['reason' => '', 'cost' => '']];
@@ -25,8 +54,14 @@
     <div class="card-body">
         @if ($vehicles->isEmpty())
             <div class="alert alert-warning">
-                Add at least one vehicle before recording a purchase.
-                <a href="{{ route('vehicles.create') }}" class="alert-link">Create vehicle</a>
+                No vehicle is available for purchase yet.
+                @if ($canCreateVehicleFromModal)
+                    Use the <strong>Add Vehicle</strong> button below to create one without leaving this page.
+                @elseif ($canQuickAddVehicle)
+                    Create at least one brand and category first, then you can add a vehicle from this page.
+                @else
+                    Ask an administrator to create a vehicle before recording a purchase.
+                @endif
             </div>
         @else
             <div class="alert alert-info">
@@ -36,7 +71,29 @@
 
         <div class="row g-3">
             <div class="col-md-6">
-                <label for="vehicle_id" class="form-label">Vehicle / Product</label>
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                    <label for="vehicle_id" class="form-label mb-0">Vehicle / Product</label>
+                    @if ($canQuickAddVehicle)
+                        <button
+                            type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#quickVehicleModal"
+                            @disabled(! $canCreateVehicleFromModal)
+                        >
+                            <i class="bi bi-plus-circle me-1"></i>Add Vehicle
+                        </button>
+                    @endif
+                </div>
+
+                <input
+                    type="search"
+                    id="vehicle_search"
+                    class="form-control mb-2"
+                    placeholder="Search by vehicle, code, registration, engine, brand or category"
+                    autocomplete="off"
+                >
+
                 <select id="vehicle_id" name="vehicle_id" class="form-select @error('vehicle_id') is-invalid @enderror" required>
                     <option value="">Select a vehicle</option>
                     @foreach ($vehicles as $vehicleOption)
@@ -45,11 +102,18 @@
                         </option>
                     @endforeach
                 </select>
+                @error('vehicle_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+
+                @if ($canQuickAddVehicle && ! $canCreateVehicleFromModal)
+                    <div class="form-text text-danger">Add at least one brand and category to use quick vehicle creation.</div>
+                @endif
             </div>
 
             <div class="col-md-6">
                 <label class="form-label">Selected Vehicle Details</label>
-                <div class="border rounded p-3 h-100 bg-light">
+                <div class="border rounded p-3 h-100 bg-light" id="selected-vehicle-details">
                     @if ($selectedVehicle)
                         <div class="fw-semibold">{{ $selectedVehicle->brand->name }} / {{ $selectedVehicle->category->name }}</div>
                         <div class="small text-muted">
@@ -161,7 +225,6 @@
         </div>
     </div>
 </div>
-
 <div class="card card-outline card-success">
     <div class="card-header">
         <h3 class="card-title">Vehicle Pictures and Documents</h3>
@@ -256,6 +319,111 @@
     </div>
 </div>
 
+@if ($canQuickAddVehicle)
+    <div class="modal fade" id="quickVehicleModal" tabindex="-1" aria-labelledby="quickVehicleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="quickVehicleModalLabel">Add Vehicle / Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="quick-vehicle-feedback" class="alert d-none mb-3"></div>
+
+                    @if (! $canCreateVehicleFromModal)
+                        <div class="alert alert-warning mb-0">
+                            You need at least one brand and one category before adding a vehicle from this page.
+                        </div>
+                    @else
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_brand_id" class="form-label">Brand</label>
+                                <select id="quick_vehicle_brand_id" class="form-select">
+                                    <option value="">Select brand</option>
+                                    @foreach ($brands as $brand)
+                                        <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback" data-error-for="brand_id"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_category_id" class="form-label">Category</label>
+                                <select id="quick_vehicle_category_id" class="form-select">
+                                    <option value="">Select category</option>
+                                    @foreach ($categories as $category)
+                                        <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="invalid-feedback" data-error-for="category_id"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_name" class="form-label">Vehicle / Product Name</label>
+                                <input type="text" id="quick_vehicle_name" class="form-control">
+                                <div class="invalid-feedback" data-error-for="name"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_code" class="form-label">Code</label>
+                                <input type="text" id="quick_vehicle_code" class="form-control">
+                                <div class="invalid-feedback" data-error-for="code"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_model" class="form-label">Model</label>
+                                <input type="text" id="quick_vehicle_model" class="form-control">
+                                <div class="invalid-feedback" data-error-for="model"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_year" class="form-label">Year</label>
+                                <input type="number" id="quick_vehicle_year" class="form-control" min="1900" max="2100">
+                                <div class="invalid-feedback" data-error-for="year"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_color" class="form-label">Color</label>
+                                <input type="text" id="quick_vehicle_color" class="form-control">
+                                <div class="invalid-feedback" data-error-for="color"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_registration_number" class="form-label">Registration Number</label>
+                                <input type="text" id="quick_vehicle_registration_number" class="form-control">
+                                <div class="invalid-feedback" data-error-for="registration_number"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_engine_number" class="form-label">Engine Number</label>
+                                <input type="text" id="quick_vehicle_engine_number" class="form-control">
+                                <div class="invalid-feedback" data-error-for="engine_number"></div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="quick_vehicle_chassis_number" class="form-label">Chassis Number</label>
+                                <input type="text" id="quick_vehicle_chassis_number" class="form-control">
+                                <div class="invalid-feedback" data-error-for="chassis_number"></div>
+                            </div>
+
+                            <div class="col-12">
+                                <label for="quick_vehicle_notes" class="form-label">Notes</label>
+                                <textarea id="quick_vehicle_notes" class="form-control" rows="3"></textarea>
+                                <div class="invalid-feedback" data-error-for="notes"></div>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="quick-vehicle-save" @disabled(! $canCreateVehicleFromModal)>
+                        <i class="bi bi-floppy me-1"></i>Save Vehicle
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @push('scripts')
     <script>
         (() => {
@@ -317,6 +485,248 @@
 
             bindRemoveButtons();
         })();
+
+        (() => {
+            const vehicleSelect = document.getElementById('vehicle_id');
+            const vehicleSearch = document.getElementById('vehicle_search');
+            const vehicleDetails = document.getElementById('selected-vehicle-details');
+            const quickVehicleModalElement = document.getElementById('quickVehicleModal');
+            const quickVehicleSaveButton = document.getElementById('quick-vehicle-save');
+            const quickVehicleFeedback = document.getElementById('quick-vehicle-feedback');
+            const quickStoreUrl = @json($canQuickAddVehicle ? route('vehicles.quick-store') : null);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const allVehicles = @json($vehicleOptionsData);
+            const vehicleMap = new Map(allVehicles.map((vehicle) => [String(vehicle.id), vehicle]));
+            const quickVehicleModal = quickVehicleModalElement && window.bootstrap
+                ? new window.bootstrap.Modal(quickVehicleModalElement)
+                : null;
+
+            if (!vehicleSelect || !vehicleSearch || !vehicleDetails) {
+                return;
+            }
+
+            const escapeHtml = (value) => {
+                const div = document.createElement('div');
+                div.textContent = value ?? '';
+                return div.innerHTML;
+            };
+
+            const currentVehicleId = () => String(vehicleSelect.value || '');
+
+            const buildSearchText = (vehicle) => [
+                vehicle.label,
+                vehicle.brand_name,
+                vehicle.category_name,
+                vehicle.registration_number,
+                vehicle.engine_number,
+            ].filter(Boolean).join(' ').toLowerCase();
+
+            const vehicleDetailsMarkup = (vehicle) => {
+                if (!vehicle) {
+                    return '<div class="text-muted">Select a vehicle to connect this purchase record.</div>';
+                }
+
+                return `
+                    <div class="fw-semibold">${escapeHtml(vehicle.brand_name)} / ${escapeHtml(vehicle.category_name)}</div>
+                    <div class="small text-muted">
+                        Registration: ${escapeHtml(vehicle.registration_number)} |
+                        Engine: ${escapeHtml(vehicle.engine_number)}
+                    </div>
+                    <div class="small text-muted mt-2">
+                        Purchased: ${escapeHtml(String(vehicle.purchased_quantity ?? 0))} |
+                        Sold: ${escapeHtml(String(vehicle.sold_quantity ?? 0))} |
+                        Available: ${escapeHtml(String(vehicle.available_stock_quantity ?? 0))}
+                    </div>
+                    <div class="small mt-2">
+                        <span class="badge ${vehicle.stock_badge_class}">${escapeHtml(vehicle.stock_status)}</span>
+                    </div>
+                `;
+            };
+
+            const renderVehicleDetails = () => {
+                vehicleDetails.innerHTML = vehicleDetailsMarkup(vehicleMap.get(currentVehicleId()) || null);
+            };
+
+            const filteredVehicles = (query) => {
+                const normalizedQuery = query.trim().toLowerCase();
+                let results = normalizedQuery === ''
+                    ? [...allVehicles]
+                    : allVehicles.filter((vehicle) => (vehicle.search || buildSearchText(vehicle)).includes(normalizedQuery));
+
+                const selectedId = currentVehicleId();
+
+                if (selectedId !== '' && !results.some((vehicle) => String(vehicle.id) === selectedId)) {
+                    const selectedVehicle = vehicleMap.get(selectedId);
+
+                    if (selectedVehicle) {
+                        results = [selectedVehicle, ...results];
+                    }
+                }
+
+                return results;
+            };
+
+            const renderVehicleOptions = (query = '') => {
+                const selectedId = currentVehicleId();
+                const results = filteredVehicles(query);
+
+                vehicleSelect.innerHTML = '';
+
+                const placeholderOption = document.createElement('option');
+                placeholderOption.value = '';
+                placeholderOption.textContent = results.length > 0 ? 'Select a vehicle' : 'No vehicles match this search';
+                vehicleSelect.appendChild(placeholderOption);
+
+                results.forEach((vehicle) => {
+                    const option = document.createElement('option');
+                    option.value = String(vehicle.id);
+                    option.textContent = vehicle.label;
+                    option.selected = selectedId !== '' && selectedId === String(vehicle.id);
+                    vehicleSelect.appendChild(option);
+                });
+
+                if (selectedId !== '' && !results.some((vehicle) => String(vehicle.id) === selectedId)) {
+                    vehicleSelect.value = '';
+                }
+            };
+
+            vehicleSearch.addEventListener('input', (event) => {
+                renderVehicleOptions(event.target.value);
+                renderVehicleDetails();
+            });
+
+            vehicleSelect.addEventListener('change', () => {
+                renderVehicleDetails();
+            });
+
+            renderVehicleOptions();
+            renderVehicleDetails();
+
+            if (!quickVehicleModalElement || !quickVehicleSaveButton || !quickStoreUrl || !csrfToken) {
+                return;
+            }
+
+            const quickVehicleFields = {
+                brand_id: document.getElementById('quick_vehicle_brand_id'),
+                category_id: document.getElementById('quick_vehicle_category_id'),
+                name: document.getElementById('quick_vehicle_name'),
+                code: document.getElementById('quick_vehicle_code'),
+                model: document.getElementById('quick_vehicle_model'),
+                year: document.getElementById('quick_vehicle_year'),
+                color: document.getElementById('quick_vehicle_color'),
+                registration_number: document.getElementById('quick_vehicle_registration_number'),
+                engine_number: document.getElementById('quick_vehicle_engine_number'),
+                chassis_number: document.getElementById('quick_vehicle_chassis_number'),
+                notes: document.getElementById('quick_vehicle_notes'),
+            };
+
+            const fieldErrorElement = (fieldName) => quickVehicleModalElement.querySelector(`[data-error-for="${fieldName}"]`);
+
+            const resetQuickVehicleValidation = () => {
+                Object.entries(quickVehicleFields).forEach(([fieldName, element]) => {
+                    if (!element) {
+                        return;
+                    }
+
+                    element.classList.remove('is-invalid');
+                    const errorElement = fieldErrorElement(fieldName);
+
+                    if (errorElement) {
+                        errorElement.textContent = '';
+                    }
+                });
+
+                if (quickVehicleFeedback) {
+                    quickVehicleFeedback.className = 'alert d-none mb-3';
+                    quickVehicleFeedback.textContent = '';
+                }
+            };
+
+            const resetQuickVehicleForm = () => {
+                Object.values(quickVehicleFields).forEach((element) => {
+                    if (!element) {
+                        return;
+                    }
+
+                    element.value = '';
+                });
+
+                resetQuickVehicleValidation();
+            };
+
+            const setQuickVehicleError = (fieldName, message) => {
+                const element = quickVehicleFields[fieldName];
+                const errorElement = fieldErrorElement(fieldName);
+
+                if (element) {
+                    element.classList.add('is-invalid');
+                }
+
+                if (errorElement) {
+                    errorElement.textContent = message;
+                }
+            };
+
+            quickVehicleModalElement.addEventListener('hidden.bs.modal', resetQuickVehicleForm);
+
+            quickVehicleSaveButton.addEventListener('click', async () => {
+                quickVehicleSaveButton.disabled = true;
+                resetQuickVehicleValidation();
+
+                const payload = Object.fromEntries(
+                    Object.entries(quickVehicleFields).map(([fieldName, element]) => [fieldName, element?.value ?? ''])
+                );
+
+                try {
+                    const response = await fetch(quickStoreUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken,
+                            'X-Requested-With': 'XMLHttpRequest',
+                        },
+                        body: JSON.stringify(payload),
+                    });
+
+                    const data = await response.json().catch(() => ({}));
+
+                    if (!response.ok) {
+                        if (response.status === 422 && data.errors) {
+                            Object.entries(data.errors).forEach(([fieldName, messages]) => {
+                                setQuickVehicleError(fieldName, Array.isArray(messages) ? messages[0] : messages);
+                            });
+
+                            if (quickVehicleFeedback) {
+                                quickVehicleFeedback.className = 'alert alert-danger mb-3';
+                                quickVehicleFeedback.textContent = 'Please fix the highlighted vehicle fields and try again.';
+                            }
+
+                            return;
+                        }
+
+                        throw new Error(data.message || 'Unable to save the vehicle right now.');
+                    }
+
+                    const newVehicle = data.vehicle;
+                    newVehicle.search = buildSearchText(newVehicle);
+                    allVehicles.unshift(newVehicle);
+                    vehicleMap.set(String(newVehicle.id), newVehicle);
+                    vehicleSearch.value = '';
+                    renderVehicleOptions();
+                    vehicleSelect.value = String(newVehicle.id);
+                    vehicleSelect.classList.remove('is-invalid');
+                    renderVehicleDetails();
+                    quickVehicleModal?.hide();
+                } catch (error) {
+                    if (quickVehicleFeedback) {
+                        quickVehicleFeedback.className = 'alert alert-danger mb-3';
+                        quickVehicleFeedback.textContent = error.message || 'Unable to save the vehicle right now.';
+                    }
+                } finally {
+                    quickVehicleSaveButton.disabled = false;
+                }
+            });
+        })();
     </script>
 @endpush
-

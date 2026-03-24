@@ -121,4 +121,37 @@ class VehicleTest extends TestCase
         $response->assertDontSee('FZ-X');
         $response->assertDontSee('Pleasure');
     }
+
+    public function test_authorized_users_can_quick_create_a_vehicle_via_json_endpoint()
+    {
+        $user = $this->createUserWithRole();
+        $brand = Brand::create(['name' => 'TVS']);
+        $category = Category::create(['name' => 'Commuter']);
+
+        $response = $this->actingAs($user)->postJson(route('vehicles.quick-store'), [
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+            'name' => 'Raider 125',
+            'code' => 'TVS-125',
+            'model' => 'Disc',
+            'registration_number' => 'DHA-5555',
+            'engine_number' => 'ENG-5555',
+            'chassis_number' => 'CHS-5555',
+            'color' => 'Red',
+            'year' => 2026,
+            'notes' => 'Created from purchase screen.',
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('message', 'Vehicle created successfully.');
+        $response->assertJsonPath('vehicle.brand_name', 'TVS');
+        $response->assertJsonPath('vehicle.category_name', 'Commuter');
+        $response->assertJsonPath('vehicle.stock_status', 'Not Purchased');
+
+        $this->assertDatabaseHas('vehicles', [
+            'name' => 'Raider 125',
+            'brand_id' => $brand->id,
+            'category_id' => $category->id,
+        ]);
+    }
 }

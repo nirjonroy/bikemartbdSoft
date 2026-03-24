@@ -186,6 +186,8 @@ class PurchaseController extends Controller
             'singleDocumentTypes' => PurchaseDocument::SINGLE_TYPES,
             'paymentStatusOptions' => Purchase::PAYMENT_STATUSES,
             'paymentMethodOptions' => Purchase::PAYMENT_METHODS,
+            'brands' => Brand::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('name')->get(),
             'vehicles' => $activeLocation
                 ? Vehicle::query()
                     ->with(['brand', 'category'])
