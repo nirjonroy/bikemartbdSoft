@@ -25,6 +25,7 @@ class RoleAndPermissionSeeder extends Seeder
             'manage stock',
             'manage purchases',
             'manage sales',
+            'view reports',
             'manage business settings',
         ];
 
@@ -43,6 +44,7 @@ class RoleAndPermissionSeeder extends Seeder
                 'manage stock',
                 'manage purchases',
                 'manage sales',
+                'view reports',
                 'manage business settings',
             ],
             'purchase-operator' => [

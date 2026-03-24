@@ -8,6 +8,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\PermissionManagementController;
 use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleManagementController;
 use App\Http\Controllers\SellController;
 use App\Http\Controllers\StockManagementController;
@@ -53,6 +54,20 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:manage sales')
         ->name('sells.invoice');
     Route::resource('sells', SellController::class)->middleware('permission:manage sales');
+    Route::prefix('reports')->name('reports.')->middleware('permission:view reports')->group(function () {
+        Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
+        Route::get('/purchase-sale', [ReportController::class, 'purchaseSale'])->name('purchase-sale');
+        Route::get('/supplier-customer', [ReportController::class, 'supplierCustomer'])->name('supplier-customer');
+        Route::get('/stock', [ReportController::class, 'stock'])->name('stock');
+        Route::get('/trending-products', [ReportController::class, 'trendingProducts'])->name('trending-products');
+        Route::get('/items', [ReportController::class, 'items'])->name('items');
+        Route::get('/product-purchase', [ReportController::class, 'productPurchase'])->name('product-purchase');
+        Route::get('/product-sell', [ReportController::class, 'productSell'])->name('product-sell');
+        Route::get('/purchase-payment', [ReportController::class, 'purchasePayment'])->name('purchase-payment');
+        Route::get('/sell-payment', [ReportController::class, 'sellPayment'])->name('sell-payment');
+        Route::get('/expense', [ReportController::class, 'expense'])->name('expense');
+        Route::get('/activity-log', [ReportController::class, 'activityLog'])->name('activity-log');
+    });
     Route::get('/business-settings', [BusinessSettingController::class, 'edit'])
         ->middleware('permission:manage business settings')
         ->name('business-settings.edit');

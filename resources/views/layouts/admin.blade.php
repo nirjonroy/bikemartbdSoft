@@ -237,6 +237,91 @@
                                     </a>
                                 </li>
                             @endcan
+                            @can('view reports')
+                                <li class="nav-item {{ request()->routeIs('reports.*') ? 'menu-open' : '' }}">
+                                    <a href="#" class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
+                                        <i class="nav-icon bi bi-bar-chart-line"></i>
+                                        <p>
+                                            Reports
+                                            <i class="nav-arrow bi bi-chevron-right"></i>
+                                        </p>
+                                    </a>
+                                    <ul class="nav nav-treeview">
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.profit-loss') }}" class="nav-link {{ request()->routeIs('reports.profit-loss') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Profit / Loss Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.purchase-sale') }}" class="nav-link {{ request()->routeIs('reports.purchase-sale') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Purchase &amp; Sale</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.supplier-customer') }}" class="nav-link {{ request()->routeIs('reports.supplier-customer') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Supplier &amp; Customer Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.stock') }}" class="nav-link {{ request()->routeIs('reports.stock') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Stock Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.trending-products') }}" class="nav-link {{ request()->routeIs('reports.trending-products') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Trending Products</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.items') }}" class="nav-link {{ request()->routeIs('reports.items') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Items Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.product-purchase') }}" class="nav-link {{ request()->routeIs('reports.product-purchase') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Product Purchase Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.product-sell') }}" class="nav-link {{ request()->routeIs('reports.product-sell') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Product Sell Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.purchase-payment') }}" class="nav-link {{ request()->routeIs('reports.purchase-payment') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Purchase Payment Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.sell-payment') }}" class="nav-link {{ request()->routeIs('reports.sell-payment') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Sell Payment Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.expense') }}" class="nav-link {{ request()->routeIs('reports.expense') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Expense Report</p>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('reports.activity-log') }}" class="nav-link {{ request()->routeIs('reports.activity-log') ? 'active' : '' }}">
+                                                <i class="nav-icon bi bi-arrow-right-short"></i>
+                                                <p>Activity Log</p>
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            @endcan
                             @can('manage business settings')
                                 <li class="nav-item">
                                     <a href="{{ route('business-settings.edit') }}" class="nav-link {{ request()->routeIs('business-settings.*') ? 'active' : '' }}">
