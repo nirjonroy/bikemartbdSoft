@@ -77,6 +77,19 @@ class Sell extends Model
         };
     }
 
+    public function getInvoiceNumberAttribute(): string
+    {
+        $locationCode = $this->relationLoaded('location')
+            ? $this->location?->code
+            : $this->location()->value('code');
+
+        return sprintf(
+            'INV-%s-%05d',
+            strtoupper($locationCode ?: 'MAIN'),
+            $this->id
+        );
+    }
+
     public function vehicle(): BelongsTo
     {
         return $this->belongsTo(Vehicle::class);

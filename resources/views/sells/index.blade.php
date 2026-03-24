@@ -117,6 +117,7 @@
                                 <td class="text-end">
                                     <div class="btn-group">
                                         <a href="{{ route('sells.show', $sell) }}" class="btn btn-sm btn-outline-primary">View</a>
+                                        <a href="{{ route('sells.invoice', $sell) }}" target="_blank" class="btn btn-sm btn-outline-dark">Print</a>
                                         <a href="{{ route('sells.edit', $sell) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
                                         <form method="POST" action="{{ route('sells.destroy', $sell) }}" onsubmit="return confirm('Delete this sale record?');">
                                             @csrf

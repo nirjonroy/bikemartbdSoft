@@ -49,6 +49,9 @@ Route::middleware('auth')->group(function () {
         ->middleware('permission:manage stock')
         ->name('stock.index');
     Route::resource('purchases', PurchaseController::class)->middleware('permission:manage purchases');
+    Route::get('/sells/{sell}/invoice', [SellController::class, 'invoice'])
+        ->middleware('permission:manage sales')
+        ->name('sells.invoice');
     Route::resource('sells', SellController::class)->middleware('permission:manage sales');
     Route::get('/business-settings', [BusinessSettingController::class, 'edit'])
         ->middleware('permission:manage business settings')

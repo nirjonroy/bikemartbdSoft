@@ -357,6 +357,71 @@ class SellTest extends TestCase
         $response->assertDontSee('Other Branch Customer');
     }
 
+    public function test_sale_invoice_can_be_rendered_for_printing()
+    {
+        $user = $this->createUserWithRole();
+        $vehicle = $this->createVehicle([
+            'name' => 'Invoice Bike',
+            'code' => 'INV-001',
+        ]);
+
+        Purchase::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Invoice Owner',
+            'quantity' => 1,
+            'buying_price_from_owner' => '120000',
+            'purchasing_date' => '2026-03-17',
+        ]);
+
+        $sell = Sell::create([
+            'vehicle_id' => $vehicle->id,
+            'name' => 'Invoice Customer',
+            'father_name' => 'Invoice Father',
+            'address' => 'Dhaka',
+            'mobile_number' => '01712345678',
+            'quantity' => 1,
+            'selling_price_to_customer' => '150000',
+            'payment_status' => 'paid',
+            'payment_method' => 'cash',
+            'payment_information' => 'Paid at counter',
+            'selling_date' => '2026-03-18',
+            'extra_additional_note' => 'Deliver with all papers.',
+        ]);
+
+        $sell->documents()->create([
+            'type' => 'registration_copy',
+            'file_path' => 'sells/test/registration.pdf',
+            'original_name' => 'registration.pdf',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('sells.invoice', [
+            'sell' => $sell,
+            'copy' => 'customer',
+        ]));
+
+        $response->assertOk();
+        $response->assertSee('Vehicle Sales Invoice');
+        $response->assertSee('Customer Copy');
+        $response->assertSee('Selected output:');
+        $response->assertSee('single A4 portrait sheet');
+        $response->assertSee('sheet is-single', false);
+        $response->assertSee('Invoice Customer');
+        $response->assertSee('Invoice Bike');
+        $response->assertSee('Registration Copy');
+        $response->assertSee($sell->invoice_number);
+
+        $bothResponse = $this->actingAs($user)->get(route('sells.invoice', [
+            'sell' => $sell,
+            'copy' => 'both',
+        ]));
+
+        $bothResponse->assertOk();
+        $bothResponse->assertSee('Both Copies');
+        $bothResponse->assertSee('sheet is-double', false);
+        $bothResponse->assertSee('Customer Copy');
+        $bothResponse->assertSee('Office Copy');
+    }
+
     private function createVehicle(array $overrides = []): Vehicle
     {
         $brand = Brand::create(['name' => uniqid('Brand ', true)]);

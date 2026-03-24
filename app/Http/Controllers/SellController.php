@@ -126,6 +126,35 @@ class SellController extends Controller
         ]));
     }
 
+    public function invoice(Request $request, Sell $sell)
+    {
+        $this->abortIfRecordNotInActiveLocation($sell->location_id);
+
+        $validated = $request->validate([
+            'copy' => ['nullable', 'string', 'in:customer,office,both'],
+        ]);
+
+        $sell->load(['vehicle.brand', 'vehicle.category', 'location', 'documents']);
+
+        $copyMode = $validated['copy'] ?? 'both';
+        $copies = match ($copyMode) {
+            'customer' => ['customer' => 'Customer Copy'],
+            'office' => ['office' => 'Office Copy'],
+            default => [
+                'customer' => 'Customer Copy',
+                'office' => 'Office Copy',
+            ],
+        };
+
+        return view('sells.invoice', [
+            'businessSetting' => $this->getBusinessSetting(),
+            'sell' => $sell,
+            'documentTypes' => SellDocument::FILE_TYPES,
+            'copyMode' => $copyMode,
+            'copies' => $copies,
+        ]);
+    }
+
     public function edit(Sell $sell)
     {
         $this->abortIfRecordNotInActiveLocation($sell->location_id);

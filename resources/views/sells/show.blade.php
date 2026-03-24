@@ -104,7 +104,10 @@
             <div class="card card-outline card-warning">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">Picture and Documents</h3>
-                    <a href="{{ route('sells.edit', $sell) }}" class="btn btn-sm btn-primary">Edit Sale</a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('sells.invoice', $sell) }}" target="_blank" class="btn btn-sm btn-dark">Print Invoice</a>
+                        <a href="{{ route('sells.edit', $sell) }}" class="btn btn-sm btn-primary">Edit Sale</a>
+                    </div>
                 </div>
                 <div class="card-body">
                     @php $picture = $sell->documentFor('picture'); @endphp
