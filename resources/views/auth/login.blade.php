@@ -4,8 +4,8 @@
 
     <div class="mb-6 text-center">
         <p class="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Staff Access</p>
-        <h1 class="mt-2 text-2xl font-semibold text-slate-900">Sign in to BikeMart POS</h1>
-        <p class="mt-2 text-sm text-slate-600">Use your assigned account to access sales, inventory, and checkout.</p>
+        <h1 class="mt-2 text-2xl font-semibold text-slate-900">Sign in to {{ $businessSetting->display_name }}</h1>
+        <p class="mt-2 text-sm text-slate-600">Use your assigned account to access sales, inventory, stock, and reports.</p>
     </div>
 
     <form method="POST" action="{{ route('login') }}">

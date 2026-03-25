@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BusinessSetting extends Model
@@ -52,7 +51,7 @@ class BusinessSetting extends Model
     public function getLogoUrlAttribute(): string
     {
         if ($this->logo_path) {
-            return Storage::url($this->logo_path);
+            return asset('storage/'.ltrim($this->logo_path, '/'));
         }
 
         return asset('adminlte/assets/img/AdminLTELogo.png');
